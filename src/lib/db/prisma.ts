@@ -18,10 +18,20 @@ function createPrismaClient() {
     throw new Error("DATABASE_URL is not set");
   }
 
+  const needsSsl =
+    process.env.DATABASE_SSL === "true" ||
+    /supabase\.(co|com)/i.test(connectionString) ||
+    /sslmode=require/i.test(connectionString);
+
   const pool =
     globalForPrisma.pgPool ??
     new Pool({
       connectionString,
+      // Serverless (Vercel): keep pool tiny to avoid exhausting Supabase free connections.
+      max: Number(process.env.DATABASE_POOL_MAX || 1),
+      idleTimeoutMillis: 20_000,
+      connectionTimeoutMillis: 15_000,
+      ssl: needsSsl ? { rejectUnauthorized: false } : undefined,
     });
 
   globalForPrisma.pgPool = pool;
@@ -37,7 +47,6 @@ if (globalForPrisma.prisma && globalForPrisma.prismaVersion !== PRISMA_CLIENT_VE
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-  globalForPrisma.prismaVersion = PRISMA_CLIENT_VERSION;
-}
+// Always cache on globalThis — required for Vercel/serverless warm invocations.
+globalForPrisma.prisma = prisma;
+globalForPrisma.prismaVersion = PRISMA_CLIENT_VERSION;

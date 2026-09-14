@@ -7,14 +7,18 @@ import { rateLimit } from "@/lib/security/rate-limit";
 /**
  * Expires inventory reservations past expiresAt and releases reserved quantity.
  * Auth: Authorization: Bearer <CRON_SECRET>
+ * Vercel Cron sends GET with the same Bearer header when CRON_SECRET is set.
  */
-export async function POST(request: Request) {
+function authorize(request: Request) {
   const secret = process.env.CRON_SECRET;
   const auth = request.headers.get("authorization");
   if (!secret || auth !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return false;
   }
+  return true;
+}
 
+async function expireReservations() {
   const limited = rateLimit({ key: "cron:reservations", limit: 30, windowMs: 60_000 });
   if (!limited.ok) {
     return NextResponse.json({ error: "Rate limited" }, { status: 429 });
@@ -64,4 +68,18 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ ok: true, expiredFound: expired.length, released });
+}
+
+export async function GET(request: Request) {
+  if (!authorize(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return expireReservations();
+}
+
+export async function POST(request: Request) {
+  if (!authorize(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return expireReservations();
 }

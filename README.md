@@ -26,7 +26,7 @@ pnpm dev
 
 Якщо Docker недоступний: PostgreSQL 16 + той самий `DATABASE_URL` з `.env.example`.
 
-Production: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+Production: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) · Vercel + Supabase: [docs/DEPLOY_VERCEL_SUPABASE.md](docs/DEPLOY_VERCEL_SUPABASE.md).
 
 App: [http://localhost:3000](http://localhost:3000) · Admin: [http://localhost:3000/admin](http://localhost:3000/admin) (`/admin/login` without bypass).
 

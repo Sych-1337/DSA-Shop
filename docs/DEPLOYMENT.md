@@ -1,10 +1,15 @@
 # Deployment
 
-## Local / VPS (recommended MVP)
+## Vercel + Supabase (recommended for soft launch)
+
+Near-zero cost: app on Vercel, Postgres + image files on Supabase.  
+Step-by-step: **[DEPLOY_VERCEL_SUPABASE.md](./DEPLOY_VERCEL_SUPABASE.md)**.
+
+## Local / VPS
 
 1. Clone repo, copy `.env.example` → `.env`, set strong secrets.
 2. Start Postgres: `docker compose up -d postgres`
-3. `pnpm install && pnpm db:push` (or migrate when consent given) && `pnpm db:seed`
+3. `pnpm install && pnpm db:migrate:deploy && pnpm db:seed`
 4. `pnpm build && pnpm start` (or `pnpm dev` for development)
 
 ### Critical production env
@@ -13,10 +18,11 @@
 - `BETTER_AUTH_SECRET` ≥ 32 chars, unique
 - `CRON_SECRET` for `/api/cron/expire-reservations`
 - `APP_URL` / `BETTER_AUTH_URL` = public HTTPS origin
+- On Vercel: `STORAGE_PROVIDER=supabase` + `SUPABASE_*` (local disk uploads do not persist)
 
 ### Cron
 
-Call every 5–15 minutes:
+Call every 5–15 minutes (or rely on Vercel daily cron in `vercel.json`):
 
 ```bash
 curl -X POST "$APP_URL/api/cron/expire-reservations" \
@@ -40,11 +46,11 @@ App expects Postgres reachable via `DATABASE_URL`. Use `docker-compose.yml` for 
 
 ## Security checklist
 
-- [ ] HTTPS reverse proxy (Caddy/Nginx)
-- [ ] Firewall: only 80/443 (+ SSH)
-- [ ] Backups of Postgres
+- [ ] HTTPS (Vercel or reverse proxy)
+- [ ] Firewall: only 80/443 (+ SSH) if VPS
+- [ ] Backups of Postgres (Supabase dashboard / dumps)
 - [ ] Rotate webhook / cron secrets
-- [ ] Verify security headers from `next.config.ts`
+- [ ] Never expose `SUPABASE_SERVICE_ROLE_KEY` to the browser
 - [ ] Confirm `/admin`, `/cart`, `/checkout` are noindex
 
 ## CI

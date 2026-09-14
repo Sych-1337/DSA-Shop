@@ -10,6 +10,7 @@ import type { ShippingProvider } from "./shipping/types";
 import { LocalDiskStorageProvider } from "./storage/local-disk";
 import { MockStorageProvider } from "./storage/mock";
 import type { StorageProvider } from "./storage/mock";
+import { SupabaseStorageProvider } from "./storage/supabase";
 import { getAnalyticsProviderName } from "@/lib/firebase/config";
 
 export function getPaymentProvider(): PaymentProvider {
@@ -26,9 +27,11 @@ export function getEmailProvider(): EmailProvider {
 
 export function getStorageProvider(): StorageProvider {
   const driver = (process.env.STORAGE_PROVIDER ?? "local").toLowerCase();
-  // local / mock both write to public/uploads until S3 adapter is wired
+  if (driver === "supabase") {
+    return new SupabaseStorageProvider();
+  }
   if (driver === "s3") {
-    // Placeholder: keep disk until S3 client is added for hosting
+    // Not wired yet — prefer supabase on Vercel.
     return new LocalDiskStorageProvider();
   }
   if (driver === "memory") {

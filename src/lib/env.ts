@@ -8,7 +8,19 @@ const envSchema = z.object({
   BETTER_AUTH_URL: z.string().url().default("http://localhost:3000"),
   SEED_ADMIN_EMAIL: z.string().email().optional(),
   SEED_ADMIN_PASSWORD: z.string().min(8).optional(),
-  STORAGE_PROVIDER: z.string().default("mock"),
+  STORAGE_PROVIDER: z.string().default("local"),
+  SUPABASE_URL: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim() ? v.trim() : undefined)),
+  SUPABASE_SERVICE_ROLE_KEY: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim() ? v.trim() : undefined)),
+  SUPABASE_STORAGE_BUCKET: z.string().optional(),
+  DATABASE_SSL: z.string().optional(),
+  DATABASE_POOL_MAX: z.string().optional(),
+  DIRECT_URL: z.string().optional(),
   PAYMENT_PROVIDER: z.string().default("mock"),
   SHIPPING_PROVIDER: z.string().default("mock"),
   EMAIL_PROVIDER: z.string().default("mock"),
