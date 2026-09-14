@@ -17,7 +17,8 @@ Free web alone is OK only for a dry-run without lasting uploads.
 ## 1. One-click Blueprint
 
 1. Push repo to GitHub (already: [DSA-Shop](https://github.com/Sych-1337/DSA-Shop)).
-2. Render Dashboard → **New** → **Blueprint** → select the repo.
+2. Render Dashboard → **New** → **Blueprint** → select the repo.  
+   Or **Web Service** with **Native** Node (not Docker). A Dockerfile in the repo can make Render build with Docker and fail migrate/sitemap without DB — prefer Native + `buildCommand` from `render.yaml`.
 3. Confirm `render.yaml` (creates `da-shop` web + `da-shop-db` Postgres + uploads disk).
 4. Fill prompted env vars:
    - `APP_URL` = `https://da-shop.onrender.com` (or your custom domain later)
