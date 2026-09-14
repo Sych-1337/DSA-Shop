@@ -1,19 +1,33 @@
-# Recover a failed migrate on Render (orders missing)
+# Recover failed Prisma migrate on Render
 
-If `20260715153000_return_requests` failed with `relation "orders" does not exist`:
+## Current state (return enums already exist)
 
-1. Deploy latest `main` (includes migration `20260715140000_commerce_and_content`).
-2. In Render **Shell** (after the new deploy finishes):
+If `20260715153000_return_requests` fails with `type "ReturnRequestStatus" already exists`:
+
+**Option A — fix now (current image, no wait):**
 
 ```bash
-# Clear failed migration flag
+./node_modules/.bin/prisma db execute --stdin <<'SQL'
+DROP TYPE IF EXISTS "ReturnItemResolution" CASCADE;
+DROP TYPE IF EXISTS "ReturnReason" CASCADE;
+DROP TYPE IF EXISTS "ReturnRequestStatus" CASCADE;
+SQL
+
 ./node_modules/.bin/prisma migrate resolve --rolled-back 20260715153000_return_requests
-
-# Apply remaining migrations (commerce first, then returns, …)
 ./node_modules/.bin/prisma migrate deploy
-
-# Seed catalog / admin
 ./node_modules/.bin/tsx prisma/seed.ts
 ```
 
-3. Open `https://dsa-shop.onrender.com/admin/login`.
+**Option B — after latest `main` deploys** (migration is idempotent):
+
+```bash
+./node_modules/.bin/prisma migrate resolve --rolled-back 20260715153000_return_requests
+./node_modules/.bin/prisma migrate deploy
+./node_modules/.bin/tsx prisma/seed.ts
+```
+
+Then open `/admin/login`.
+
+## Earlier failure (`orders` does not exist)
+
+That is fixed by migration `20260715140000_commerce_and_content`. If that never applied, deploy latest `main` first, then run Option A or B.

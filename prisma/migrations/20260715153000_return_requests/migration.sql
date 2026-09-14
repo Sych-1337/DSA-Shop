@@ -1,14 +1,23 @@
--- CreateEnum
-CREATE TYPE "ReturnRequestStatus" AS ENUM ('REQUESTED', 'APPROVED', 'RECEIVED', 'REJECTED', 'REFUNDED', 'CANCELLED');
+-- Idempotent: first failed run on Render left these enums behind (orders missing).
+DO $$ BEGIN
+    CREATE TYPE "ReturnRequestStatus" AS ENUM ('REQUESTED', 'APPROVED', 'RECEIVED', 'REJECTED', 'REFUNDED', 'CANCELLED');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
 
--- CreateEnum
-CREATE TYPE "ReturnReason" AS ENUM ('NOT_SUITABLE', 'WRONG_ITEM', 'DEFECT', 'OTHER');
+DO $$ BEGIN
+    CREATE TYPE "ReturnReason" AS ENUM ('NOT_SUITABLE', 'WRONG_ITEM', 'DEFECT', 'OTHER');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
 
--- CreateEnum
-CREATE TYPE "ReturnItemResolution" AS ENUM ('PENDING', 'RESTOCK', 'WRITE_OFF');
+DO $$ BEGIN
+    CREATE TYPE "ReturnItemResolution" AS ENUM ('PENDING', 'RESTOCK', 'WRITE_OFF');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
 
--- CreateTable
-CREATE TABLE "return_requests" (
+CREATE TABLE IF NOT EXISTS "return_requests" (
     "id" TEXT NOT NULL,
     "orderId" TEXT NOT NULL,
     "status" "ReturnRequestStatus" NOT NULL DEFAULT 'REQUESTED',
@@ -23,8 +32,7 @@ CREATE TABLE "return_requests" (
     CONSTRAINT "return_requests_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "return_items" (
+CREATE TABLE IF NOT EXISTS "return_items" (
     "id" TEXT NOT NULL,
     "returnRequestId" TEXT NOT NULL,
     "orderItemId" TEXT NOT NULL,
@@ -34,26 +42,26 @@ CREATE TABLE "return_items" (
     CONSTRAINT "return_items_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE INDEX "return_requests_orderId_idx" ON "return_requests"("orderId");
+CREATE INDEX IF NOT EXISTS "return_requests_orderId_idx" ON "return_requests"("orderId");
+CREATE INDEX IF NOT EXISTS "return_requests_status_idx" ON "return_requests"("status");
+CREATE INDEX IF NOT EXISTS "return_requests_createdAt_idx" ON "return_requests"("createdAt");
+CREATE INDEX IF NOT EXISTS "return_items_returnRequestId_idx" ON "return_items"("returnRequestId");
+CREATE INDEX IF NOT EXISTS "return_items_orderItemId_idx" ON "return_items"("orderItemId");
 
--- CreateIndex
-CREATE INDEX "return_requests_status_idx" ON "return_requests"("status");
+DO $$ BEGIN
+    ALTER TABLE "return_requests" ADD CONSTRAINT "return_requests_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "orders"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
 
--- CreateIndex
-CREATE INDEX "return_requests_createdAt_idx" ON "return_requests"("createdAt");
+DO $$ BEGIN
+    ALTER TABLE "return_items" ADD CONSTRAINT "return_items_returnRequestId_fkey" FOREIGN KEY ("returnRequestId") REFERENCES "return_requests"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
 
--- CreateIndex
-CREATE INDEX "return_items_returnRequestId_idx" ON "return_items"("returnRequestId");
-
--- CreateIndex
-CREATE INDEX "return_items_orderItemId_idx" ON "return_items"("orderItemId");
-
--- AddForeignKey
-ALTER TABLE "return_requests" ADD CONSTRAINT "return_requests_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "orders"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "return_items" ADD CONSTRAINT "return_items_returnRequestId_fkey" FOREIGN KEY ("returnRequestId") REFERENCES "return_requests"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "return_items" ADD CONSTRAINT "return_items_orderItemId_fkey" FOREIGN KEY ("orderItemId") REFERENCES "order_items"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+    ALTER TABLE "return_items" ADD CONSTRAINT "return_items_orderItemId_fkey" FOREIGN KEY ("orderItemId") REFERENCES "order_items"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
