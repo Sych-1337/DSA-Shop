@@ -21,6 +21,7 @@ function createPrismaClient() {
   const needsSsl =
     process.env.DATABASE_SSL === "true" ||
     /supabase\.(co|com)/i.test(connectionString) ||
+    /render\.com/i.test(connectionString) ||
     /sslmode=require/i.test(connectionString);
 
   const pool =
