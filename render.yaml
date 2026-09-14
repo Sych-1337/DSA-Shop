@@ -11,6 +11,8 @@ databases:
     databaseName: dashop
     user: dashop
 
+# Prefer Native Node (not Docker). If a Dockerfile is present, Render may use it
+# and skip buildCommand — set Environment → Native, or delete Dockerfile usage in dashboard.
 services:
   - type: web
     name: da-shop
@@ -21,6 +23,7 @@ services:
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm exec prisma generate && pnpm exec prisma migrate deploy && pnpm build
     startCommand: pnpm start
     healthCheckPath: /api/health
+    # Important: do not set dockerfilePath — use native Node build so DATABASE_URL works at build.
     disk:
       name: da-shop-uploads
       mountPath: /opt/render/project/src/public/uploads

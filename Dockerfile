@@ -14,13 +14,17 @@ RUN corepack enable
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
-ARG DATABASE_URL=postgresql://kawaiko:kawaiko@postgres:5432/kawaiko?schema=public
+# Build-time placeholders — real DATABASE_URL is injected at runtime on Render.
+# Prefer Native Environment (not Docker) on Render so migrate+build can use live Postgres.
+ARG DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build?schema=public
 ARG BETTER_AUTH_SECRET=build-time-secret-at-least-32-characters-long
 ARG APP_URL=http://localhost:3000
 ENV DATABASE_URL=$DATABASE_URL
 ENV BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET
 ENV APP_URL=$APP_URL
 ENV BETTER_AUTH_URL=$APP_URL
+# Avoid hard-failing static generation when DB is unreachable during image build.
+ENV DATABASE_SSL=false
 RUN pnpm exec prisma generate && pnpm build
 
 FROM node:22-bookworm-slim AS runner
