@@ -1,39 +1,38 @@
 # Deployment
 
-## Vercel + Supabase (recommended for soft launch)
+## Render (recommended)
 
-Near-zero cost: app on Vercel, Postgres + image files on Supabase.  
-Step-by-step: **[DEPLOY_VERCEL_SUPABASE.md](./DEPLOY_VERCEL_SUPABASE.md)**.
+App + PostgreSQL + persistent disk for images on [Render](https://render.com).
+
+Step-by-step: **[DEPLOY_RENDER.md](./DEPLOY_RENDER.md)** · Blueprint: [`render.yaml`](../render.yaml).
 
 ## Local / VPS
 
 1. Clone repo, copy `.env.example` → `.env`, set strong secrets.
 2. Start Postgres: `docker compose up -d postgres`
 3. `pnpm install && pnpm db:migrate:deploy && pnpm db:seed`
-4. `pnpm build && pnpm start` (or `pnpm dev` for development)
+4. `pnpm build && pnpm start` (or `pnpm dev`)
 
 ### Critical production env
 
-- `ADMIN_AUTH_BYPASS` must be **unset** or `false`
-- `BETTER_AUTH_SECRET` ≥ 32 chars, unique
+- `ADMIN_AUTH_BYPASS` unset or `false`
+- `BETTER_AUTH_SECRET` ≥ 32 chars
 - `CRON_SECRET` for `/api/cron/expire-reservations`
 - `APP_URL` / `BETTER_AUTH_URL` = public HTTPS origin
-- On Vercel: `STORAGE_PROVIDER=supabase` + `SUPABASE_*` (local disk uploads do not persist)
+- `STORAGE_PROVIDER=local` + persistent disk on Render (or equivalent volume on VPS)
 
 ### Cron
-
-Call every 5–15 minutes (or rely on Vercel daily cron in `vercel.json`):
 
 ```bash
 curl -X POST "$APP_URL/api/cron/expire-reservations" \
   -H "Authorization: Bearer $CRON_SECRET"
 ```
 
-### Admin access
+### Admin
 
-1. Seed creates OWNER staff: `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`
-2. Open `/admin/login`
-3. Local-only bypass: `ADMIN_AUTH_BYPASS=true` + `NODE_ENV=development` (forbidden in production code path)
+1. Seed OWNER: `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`
+2. `/admin/login`
+3. Bypass only locally: `ADMIN_AUTH_BYPASS=true` + `NODE_ENV=development`
 
 ## Docker image
 
@@ -42,17 +41,13 @@ docker build -t da-shop:latest .
 docker run --env-file .env -p 3000:3000 da-shop:latest
 ```
 
-App expects Postgres reachable via `DATABASE_URL`. Use `docker-compose.yml` for DB or manage Postgres separately.
-
 ## Security checklist
 
-- [ ] HTTPS (Vercel or reverse proxy)
-- [ ] Firewall: only 80/443 (+ SSH) if VPS
-- [ ] Backups of Postgres (Supabase dashboard / dumps)
-- [ ] Rotate webhook / cron secrets
-- [ ] Never expose `SUPABASE_SERVICE_ROLE_KEY` to the browser
-- [ ] Confirm `/admin`, `/cart`, `/checkout` are noindex
+- [ ] HTTPS (Render custom domain or reverse proxy)
+- [ ] Strong admin password after seed
+- [ ] Postgres backups (Render dashboard / dumps)
+- [ ] Never commit `.env`
 
 ## CI
 
-GitHub Actions runs lint, typecheck, unit tests, and build on push/PR (see `.github/workflows/ci.yml`).
+GitHub Actions: lint, typecheck, unit tests, build (`.github/workflows/ci.yml`).

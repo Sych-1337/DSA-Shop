@@ -1,0 +1,64 @@
+# Render Blueprint — D&A Shop (web + Postgres)
+# https://render.com/docs/blueprint-spec
+#
+# Free web has no persistent disk (uploads won't survive redeploys).
+# For real product images use at least Starter web + a disk (below).
+# Postgres on Render is a paid Basic instance (no free DB anymore).
+
+databases:
+  - name: da-shop-db
+    plan: basic-256mb
+    databaseName: dashop
+    user: dashop
+
+services:
+  - type: web
+    name: da-shop
+    runtime: node
+    plan: starter
+    region: frankfurt
+    rootDir: .
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm exec prisma generate && pnpm exec prisma migrate deploy && pnpm build
+    startCommand: pnpm start
+    healthCheckPath: /api/health
+    disk:
+      name: da-shop-uploads
+      mountPath: /opt/render/project/src/public/uploads
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: da-shop-db
+          property: connectionString
+      - key: DATABASE_SSL
+        value: "true"
+      - key: DATABASE_POOL_MAX
+        value: "5"
+      - key: STORAGE_PROVIDER
+        value: local
+      - key: PAYMENT_PROVIDER
+        value: mock
+      - key: SHIPPING_PROVIDER
+        value: mock
+      - key: EMAIL_PROVIDER
+        value: mock
+      - key: ANALYTICS_PROVIDER
+        value: mock
+      - key: ADMIN_AUTH_BYPASS
+        value: "false"
+      - key: APP_URL
+        sync: false
+      - key: BETTER_AUTH_URL
+        sync: false
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      - key: CRON_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: SEED_ADMIN_EMAIL
+        sync: false
+      - key: SEED_ADMIN_PASSWORD
+        sync: false
