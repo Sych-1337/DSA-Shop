@@ -1,15 +1,35 @@
 /**
  * Ensure two OWNER staff accounts exist (full permissions).
- * Safe to re-run — updates password + activates staff profile.
+ * Self-contained for Render Docker (no app src/lib imports).
  *
- * Render Shell:
  *   ./node_modules/.bin/tsx prisma/ensure-owners.ts
  */
 import "dotenv/config";
 
 import { hashPassword } from "better-auth/crypto";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 
-import { prisma } from "../src/lib/db/prisma";
+import { PrismaClient } from "../src/generated/prisma";
+
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not set");
+}
+
+const needsSsl =
+  process.env.DATABASE_SSL === "true" ||
+  /render\.com/i.test(connectionString) ||
+  /sslmode=require/i.test(connectionString) ||
+  // Internal Render hostname has no sslmode in URL but still needs SSL often
+  /dpg-/i.test(connectionString);
+
+const pool = new Pool({
+  connectionString,
+  max: 2,
+  ssl: needsSsl ? { rejectUnauthorized: false } : undefined,
+});
+const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
 const OWNERS = [
   {
@@ -88,7 +108,7 @@ async function ensureOwner(input: (typeof OWNERS)[number]) {
   const ownerRole = await prisma.role.findUnique({ where: { key: "OWNER" } });
   if (!ownerRole) {
     throw new Error(
-      'Role OWNER missing — run full seed first: ./node_modules/.bin/tsx prisma/seed.ts',
+      "Role OWNER missing — run full seed first: ./node_modules/.bin/tsx prisma/seed.ts",
     );
   }
 
@@ -115,4 +135,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    await pool.end();
   });
