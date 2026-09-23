@@ -12,6 +12,8 @@ import {
   type MockPaymentSoftError,
 } from "@/features/checkout/service";
 import { PaymentStatus } from "@/generated/prisma";
+import { isMockPaymentAllowed } from "@/lib/security/mock-payments";
+import { verifyOrderAccessToken } from "@/lib/security/order-access";
 
 const HARD_OUTCOMES: MockPaymentOutcome[] = [
   "paid",
@@ -25,14 +27,20 @@ const SOFT_ERRORS: MockPaymentSoftError[] = ["network_error", "timeout"];
 
 export async function settleMockPaymentAction(formData: FormData) {
   const t = await getTranslations("checkout");
+
+  if (!isMockPaymentAllowed()) {
+    return { ok: false as const, error: t("payInvalid") };
+  }
+
   const orderNumber = formData.get("orderNumber")?.toString();
   const outcome = formData.get("outcome")?.toString();
-  if (!orderNumber || !outcome) {
+  const token = formData.get("token")?.toString();
+  if (!orderNumber || !outcome || !token) {
     return { ok: false as const, error: t("payInvalid") };
   }
 
   const order = await getOrderByNumber(orderNumber);
-  if (!order) {
+  if (!order || !verifyOrderAccessToken(token, order.orderNumber, order.customerEmail)) {
     return { ok: false as const, error: t("payOrderMissing") };
   }
 
@@ -45,7 +53,7 @@ export async function settleMockPaymentAction(formData: FormData) {
   if (order.paymentStatus === PaymentStatus.PAID || payment.status === PaymentStatus.PAID) {
     return {
       ok: true as const,
-      redirectUrl: `/checkout/success?order=${order.orderNumber}`,
+      redirectUrl: `/checkout/success?order=${order.orderNumber}&token=${token}`,
     };
   }
 
@@ -79,6 +87,7 @@ export async function settleMockPaymentAction(formData: FormData) {
         externalPaymentId: payment.externalPaymentId,
         amount: payment.amount,
         eventId: `mock_evt_${order.id}_${Date.now()}`,
+        provider: "mock",
       });
       revalidatePath("/checkout/pay");
       revalidatePath("/checkout/success");
@@ -86,7 +95,7 @@ export async function settleMockPaymentAction(formData: FormData) {
       revalidatePath("/admin/sales");
       return {
         ok: true as const,
-        redirectUrl: `/checkout/success?order=${order.orderNumber}`,
+        redirectUrl: `/checkout/success?order=${order.orderNumber}&token=${token}`,
       };
     }
 
@@ -101,7 +110,7 @@ export async function settleMockPaymentAction(formData: FormData) {
     revalidatePath("/cart");
     return {
       ok: true as const,
-      redirectUrl: `/checkout/payment-failed?order=${order.orderNumber}&reason=${failReason}`,
+      redirectUrl: `/checkout/payment-failed?order=${order.orderNumber}&token=${token}&reason=${failReason}`,
     };
   } catch {
     return { ok: false as const, error: t("paySettleFailed") };

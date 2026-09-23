@@ -2,10 +2,12 @@ import Link from "next/link";
 
 import { listPayments } from "@/features/orders/admin-service";
 import { formatMoney } from "@/lib/money";
+import { requirePermission } from "@/lib/auth/rbac";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPaymentsPage() {
+  await requirePermission("payments.read", "/admin/payments");
   const { payments, total } = await listPayments();
 
   return (

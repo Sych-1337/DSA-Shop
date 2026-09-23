@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { StockMovementType } from "@/generated/prisma";
+import { OrderStatus, PaymentStatus, StockMovementType } from "@/generated/prisma";
 import { prisma } from "@/lib/db/prisma";
 import { rateLimit } from "@/lib/security/rate-limit";
 
 /**
- * Expires inventory reservations past expiresAt and releases reserved quantity.
+ * Expires inventory reservations + cancels stale unpaid prepaid orders.
  * Auth: Authorization: Bearer <CRON_SECRET>
- * Vercel Cron sends GET with the same Bearer header when CRON_SECRET is set.
  */
 function authorize(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -67,7 +66,74 @@ async function expireReservations() {
     });
   }
 
-  return NextResponse.json({ ok: true, expiredFound: expired.length, released });
+  const hours = Number(process.env.UNPAID_ORDER_CANCEL_HOURS || 48);
+  const cutoff = new Date(Date.now() - Math.max(1, hours) * 60 * 60 * 1000);
+  const unpaid = await prisma.order.findMany({
+    where: {
+      paymentStatus: PaymentStatus.PENDING,
+      status: { in: [OrderStatus.NEW, OrderStatus.AWAITING_CONFIRMATION] },
+      createdAt: { lt: cutoff },
+    },
+    take: 100,
+    select: { id: true, orderNumber: true },
+  });
+
+  let cancelled = 0;
+  for (const order of unpaid) {
+    await prisma.$transaction(async (tx) => {
+      await tx.order.update({
+        where: { id: order.id },
+        data: {
+          status: OrderStatus.CANCELLED,
+          paymentStatus: PaymentStatus.CANCELLED,
+          cancelledAt: now,
+        },
+      });
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: order.id,
+          field: "status",
+          oldValue: OrderStatus.NEW,
+          newValue: OrderStatus.CANCELLED,
+          reason: `Unpaid after ${hours}h`,
+        },
+      });
+
+      const openReservations = await tx.inventoryReservation.findMany({
+        where: { orderId: order.id, releasedAt: null, convertedAt: null },
+      });
+      for (const reservation of openReservations) {
+        await tx.inventoryItem.update({
+          where: { id: reservation.inventoryItemId },
+          data: {
+            reserved: { decrement: reservation.quantity },
+            version: { increment: 1 },
+          },
+        });
+        await tx.inventoryReservation.update({
+          where: { id: reservation.id },
+          data: { releasedAt: now },
+        });
+        await tx.stockMovement.create({
+          data: {
+            inventoryItemId: reservation.inventoryItemId,
+            type: StockMovementType.RESERVATION_RELEASE,
+            quantity: reservation.quantity,
+            reason: "Unpaid order cancelled",
+            orderId: order.id,
+          },
+        });
+      }
+    });
+    cancelled += 1;
+  }
+
+  return NextResponse.json({
+    ok: true,
+    expiredFound: expired.length,
+    released,
+    unpaidCancelled: cancelled,
+  });
 }
 
 export async function GET(request: Request) {

@@ -45,14 +45,26 @@ DATABASE_URL=<from Render Postgres>
 DATABASE_SSL=true
 DATABASE_POOL_MAX=5
 STORAGE_PROVIDER=local
-APP_URL=https://YOUR-SERVICE.onrender.com
-BETTER_AUTH_URL=https://YOUR-SERVICE.onrender.com
+APP_URL=https://dsa-anime.shop
+BETTER_AUTH_URL=https://dsa-anime.shop
+AUTH_TRUSTED_ORIGINS=https://dsa-anime.shop,https://www.dsa-anime.shop,https://dsa-shop.onrender.com
 BETTER_AUTH_SECRET=<random ≥ 32 chars>
 CRON_SECRET=<random>
 ADMIN_AUTH_BYPASS=false
-PAYMENT_PROVIDER=mock
+PAYMENT_PROVIDER=wayforpay
+# or leave bank-transfer-only and confirm in admin
+FOP_NAME=
+FOP_IBAN=
+FOP_EDRPOU=
+WAYFORPAY_MERCHANT_ACCOUNT=
+WAYFORPAY_SECRET_KEY=
+WAYFORPAY_MERCHANT_DOMAIN=dsa-anime.shop
+EMAIL_PROVIDER=resend
+EMAIL_FROM=D&A <noreply@dsa-anime.shop>
+RESEND_API_KEY=
 SHIPPING_PROVIDER=mock
-EMAIL_PROVIDER=mock
+STORAGE_PROVIDER=local
+UNPAID_ORDER_CANCEL_HOURS=48
 ```
 
 ## 3. Seed admin (once)

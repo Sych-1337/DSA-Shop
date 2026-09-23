@@ -9,12 +9,14 @@ import {
 } from "@/features/commission/actions";
 import { getSettlementPeriodDetail } from "@/features/commission/service";
 import { formatMoney } from "@/lib/money";
+import { requirePermission } from "@/lib/auth/rbac";
 
 export default async function AdminCommissionPeriodPage({
   params,
 }: {
   params: Promise<{ periodId: string }>;
 }) {
+  await requirePermission("commissions.read", "/admin/commissions");
   const { periodId } = await params;
   const period = await getSettlementPeriodDetail(periodId);
   if (!period) notFound();

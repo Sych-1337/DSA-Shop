@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 
 import { AdminMobileNav } from "@/components/admin/admin-mobile-nav";
+import { AdminSignOut } from "@/components/admin/admin-sign-out";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import {
   ADMIN_NAV_PERMISSION,
@@ -37,6 +38,7 @@ const NAV = [
   { href: "/admin/seo", label: "SEO" },
   { href: "/admin/analytics", label: "Analytics" },
   { href: "/admin/commissions", label: "Комісія" },
+  { href: "/admin/staff", label: "Команда" },
   { href: "/admin/settings", label: "Налаштування" },
 ];
 
@@ -77,8 +79,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               </Link>
             ))}
           </nav>
-          <div className="border-t border-white/10 p-3">
+          <div className="space-y-2 border-t border-white/10 p-3">
             <ThemeToggle />
+            <AdminSignOut />
           </div>
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">

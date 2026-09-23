@@ -4,6 +4,8 @@ import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { AdminSignOut } from "@/components/admin/admin-sign-out";
+
 type NavItem = { href: string; label: string };
 
 export function AdminMobileNav({
@@ -76,6 +78,9 @@ export function AdminMobileNav({
                 </Link>
               ))}
             </nav>
+            <div className="border-t border-white/10 p-3">
+              <AdminSignOut />
+            </div>
           </div>
         </div>
       ) : null}

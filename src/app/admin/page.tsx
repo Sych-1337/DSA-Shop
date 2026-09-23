@@ -3,10 +3,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getDashboardMetrics } from "@/features/orders/admin-service";
 import { formatMoney } from "@/lib/money";
+import { requirePermission } from "@/lib/auth/rbac";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
+  await requirePermission("orders.read", "/admin");
   const metrics = await getDashboardMetrics();
 
   const cards = [

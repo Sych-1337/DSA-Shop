@@ -3,8 +3,10 @@ import { MockAnalyticsProvider } from "./analytics/mock";
 import type { AnalyticsProvider } from "./analytics/types";
 import { MockEmailProvider } from "./email/mock";
 import type { EmailProvider } from "./email/mock";
+import { ResendEmailProvider, SmtpEmailProvider } from "./email/smtp";
 import { MockPaymentProvider } from "./payment/mock";
 import type { PaymentProvider } from "./payment/types";
+import { WayForPayPaymentProvider } from "./payment/wayforpay";
 import { MockShippingProvider } from "./shipping/mock";
 import type { ShippingProvider } from "./shipping/types";
 import { LocalDiskStorageProvider } from "./storage/local-disk";
@@ -14,6 +16,10 @@ import { SupabaseStorageProvider } from "./storage/supabase";
 import { getAnalyticsProviderName } from "@/lib/firebase/config";
 
 export function getPaymentProvider(): PaymentProvider {
+  const driver = (process.env.PAYMENT_PROVIDER ?? "mock").toLowerCase();
+  if (driver === "wayforpay") {
+    return new WayForPayPaymentProvider();
+  }
   return new MockPaymentProvider();
 }
 
@@ -22,6 +28,9 @@ export function getShippingProvider(): ShippingProvider {
 }
 
 export function getEmailProvider(): EmailProvider {
+  const driver = (process.env.EMAIL_PROVIDER ?? "mock").toLowerCase();
+  if (driver === "resend") return new ResendEmailProvider();
+  if (driver === "smtp") return new SmtpEmailProvider();
   return new MockEmailProvider();
 }
 
@@ -31,7 +40,6 @@ export function getStorageProvider(): StorageProvider {
     return new SupabaseStorageProvider();
   }
   if (driver === "s3") {
-    // Not wired yet — prefer supabase on Vercel.
     return new LocalDiskStorageProvider();
   }
   if (driver === "memory") {

@@ -801,6 +801,7 @@ enum OrderSource {
 
 enum PaymentMethod {
   ONLINE
+  BANK_TRANSFER
   COD
 }
 

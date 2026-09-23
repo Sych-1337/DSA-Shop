@@ -181,15 +181,33 @@ export function CheckoutForm({
 
       <CheckoutShippingFields prefill={shippingPrefill} resetKey={selectedAddressId || "none"} />
 
-      <div className="block space-y-1 text-sm">
+      <div className="block space-y-2 text-sm">
         <span>{t("payment")}</span>
-        <input type="hidden" name="paymentMethod" value="ONLINE" />
-        <div className="flex h-11 items-center rounded-xl border border-border bg-surface-muted px-3 text-sm font-medium">
-          {t("paymentOnline")}
-          <span className="ml-2 text-xs font-normal text-muted-foreground">
-            ({t("paymentPrepaidOnly")})
+        <p className="text-xs text-muted-foreground">{t("paymentPrepaidOnly")}</p>
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-surface p-3">
+          <input
+            type="radio"
+            name="paymentMethod"
+            value="BANK_TRANSFER"
+            defaultChecked
+            className="mt-1"
+          />
+          <span>
+            <span className="font-medium">{t("paymentBankTransfer")}</span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              {t("paymentBankTransferHint")}
+            </span>
           </span>
-        </div>
+        </label>
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-surface p-3">
+          <input type="radio" name="paymentMethod" value="ONLINE" className="mt-1" />
+          <span>
+            <span className="font-medium">{t("paymentOnline")}</span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              {t("paymentOnlineHint")}
+            </span>
+          </span>
+        </label>
       </div>
 
       <label className="block space-y-1 text-sm">

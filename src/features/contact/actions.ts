@@ -12,6 +12,15 @@ const contactSchema = z.object({
 });
 
 export async function submitContactMessage(formData: FormData) {
+  const { headers } = await import("next/headers");
+  const { rateLimit } = await import("@/lib/security/rate-limit");
+  const headerList = await headers();
+  const ip = headerList.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  const limited = rateLimit({ key: `contact:${ip}`, limit: 8, windowMs: 60_000 });
+  if (!limited.ok) {
+    return { ok: false as const, error: "formInvalid" as const };
+  }
+
   const parsed = contactSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),

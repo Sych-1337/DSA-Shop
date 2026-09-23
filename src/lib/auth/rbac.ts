@@ -125,7 +125,7 @@ export function staffHasPermission(staff: StaffContext, permission: string) {
 
 /** Route permission used to filter admin nav links. */
 export const ADMIN_NAV_PERMISSION: Record<string, string | null> = {
-  "/admin": null,
+  "/admin": "orders.read",
   "/admin/sales": "orders.read",
   "/admin/orders": "orders.read",
   "/admin/returns": "orders.read",
@@ -143,5 +143,6 @@ export const ADMIN_NAV_PERMISSION: Record<string, string | null> = {
   "/admin/seo": "seo.write",
   "/admin/analytics": "analytics.read",
   "/admin/commissions": "commissions.read",
+  "/admin/staff": "staff.manage",
   "/admin/settings": "settings.manage",
 };

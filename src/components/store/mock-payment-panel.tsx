@@ -33,11 +33,13 @@ export function MockPaymentPanel({
   totalAmount,
   customerEmail,
   alreadyFailed,
+  accessToken,
 }: {
   orderNumber: string;
   totalAmount: number;
   customerEmail: string;
   alreadyFailed: boolean;
+  accessToken: string;
 }) {
   const t = useTranslations("checkout");
   const router = useRouter();
@@ -58,6 +60,7 @@ export function MockPaymentPanel({
       const formData = new FormData();
       formData.set("orderNumber", orderNumber);
       formData.set("outcome", outcome);
+      formData.set("token", accessToken);
       const result = await settleMockPaymentAction(formData);
       if (!result.ok) {
         setError(result.error);

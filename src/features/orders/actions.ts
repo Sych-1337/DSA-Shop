@@ -7,9 +7,11 @@ import {
   addOrderNote,
   createShipmentForOrder,
   markOrderPaidManually,
+  saveShipmentTracking,
   transitionOrderStatus,
 } from "@/features/orders/admin-service";
 import { assertPermission } from "@/lib/auth/rbac";
+import { writeAuditLog } from "@/lib/security/audit";
 
 export async function transitionOrderAction(formData: FormData) {
   await assertPermission("orders.write");
@@ -47,6 +49,22 @@ export async function createShipmentAction(formData: FormData) {
   revalidatePath("/admin/shipments");
 }
 
+export async function saveTrackingAction(formData: FormData) {
+  const staff = await assertPermission("orders.write");
+  const orderId = formData.get("orderId")?.toString();
+  const trackingNumber = formData.get("trackingNumber")?.toString() ?? "";
+  if (!orderId) return;
+
+  await saveShipmentTracking({
+    orderId,
+    trackingNumber,
+    actorId: staff.userId === "bypass" ? undefined : staff.userId,
+  });
+  revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath("/admin/shipments");
+  revalidatePath("/admin/sales");
+}
+
 export async function markOrderPaidAction(formData: FormData) {
   const staff = await assertPermission("payments.manualMark");
   const orderId = formData.get("orderId")?.toString();
@@ -57,6 +75,14 @@ export async function markOrderPaidAction(formData: FormData) {
     orderId,
     reason,
     actorId: staff.userId === "bypass" ? undefined : staff.userId,
+  });
+  await writeAuditLog({
+    actorId: staff.userId === "bypass" ? undefined : staff.userId,
+    actorRole: staff.roleKeys[0],
+    action: "order.mark_paid",
+    entityType: "Order",
+    entityId: orderId,
+    reason,
   });
   revalidatePath(`/admin/orders/${orderId}`);
   revalidatePath("/admin/orders");

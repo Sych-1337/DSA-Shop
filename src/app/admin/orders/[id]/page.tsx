@@ -6,12 +6,14 @@ import {
   addOrderNoteAction,
   createShipmentAction,
   markOrderPaidAction,
+  saveTrackingAction,
   transitionOrderAction,
 } from "@/features/orders/actions";
 import { getAdminOrder } from "@/features/orders/admin-service";
 import { ORDER_TRANSITIONS } from "@/features/orders/state-machine";
 import { PaymentStatus } from "@/generated/prisma";
 import { formatMoney } from "@/lib/money";
+import { requirePermission, staffHasPermission } from "@/lib/auth/rbac";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +22,9 @@ export default async function AdminOrderDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const staff = await requirePermission("orders.read", "/admin/orders");
+  const canWrite = staffHasPermission(staff, "orders.write");
+  const canMarkPaid = staffHasPermission(staff, "payments.manualMark");
   const { id } = await params;
   const order = await getAdminOrder(id);
   if (!order) notFound();
@@ -88,8 +93,12 @@ export default async function AdminOrderDetailPage({
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Оплата</dt>
               <dd>
-                {order.paymentMethod === "ONLINE" ? "Повна передоплата" : order.paymentMethod} ·{" "}
-                {order.paymentStatus}
+                {order.paymentMethod === "BANK_TRANSFER"
+                  ? "Переказ на ФОП"
+                  : order.paymentMethod === "ONLINE"
+                    ? "Онлайн (WayForPay)"
+                    : order.paymentMethod}{" "}
+                · {order.paymentStatus}
               </dd>
             </div>
             {order.customerNote ? (
@@ -104,7 +113,7 @@ export default async function AdminOrderDetailPage({
         <section className="rounded-2xl border border-border bg-surface p-5 shadow-[var(--shadow-card)]">
           <h2 className="text-display text-xl font-semibold">Дії</h2>
           <div className="mt-4 space-y-3">
-            {nextStatuses.length > 0 ? (
+            {canWrite && nextStatuses.length > 0 ? (
               <form action={transitionOrderAction} className="flex flex-wrap gap-2">
                 <input type="hidden" name="orderId" value={order.id} />
                 <select
@@ -127,21 +136,38 @@ export default async function AdminOrderDetailPage({
                   Змінити статус
                 </Button>
               </form>
-            ) : (
-              <p className="text-sm text-muted-foreground">Термінальний статус — переходів немає.</p>
-            )}
+            ) : null}
 
-            <form action={createShipmentAction}>
-              <input type="hidden" name="orderId" value={order.id} />
-              <Button type="submit" variant="secondary" size="sm">
-                Створити накладну (mock)
-              </Button>
-            </form>
+            {canWrite ? (
+              <form action={saveTrackingAction} className="space-y-2 rounded-xl border border-border p-3">
+                <p className="text-xs text-muted-foreground">Зберегти ТТН Нової Пошти (вручну)</p>
+                <input type="hidden" name="orderId" value={order.id} />
+                <input
+                  name="trackingNumber"
+                  required
+                  placeholder="2045…"
+                  defaultValue={order.shipments[0]?.trackingNumber ?? ""}
+                  className="h-10 w-full rounded-xl border border-border px-3 text-sm"
+                />
+                <Button type="submit" variant="secondary" size="sm">
+                  Зберегти ТТН
+                </Button>
+              </form>
+            ) : null}
 
-            {order.paymentStatus !== PaymentStatus.PAID ? (
+            {canWrite ? (
+              <form action={createShipmentAction}>
+                <input type="hidden" name="orderId" value={order.id} />
+                <Button type="submit" variant="outline" size="sm">
+                  Створити чернетку відправки
+                </Button>
+              </form>
+            ) : null}
+
+            {canMarkPaid && order.paymentStatus !== PaymentStatus.PAID ? (
               <form action={markOrderPaidAction} className="space-y-2 rounded-xl border border-border p-3">
                 <p className="text-xs text-muted-foreground">
-                  Вручну підтвердити повну оплату (stub / банківський перевод).
+                  Підтвердити передоплату (переказ на ФОП надійшов).
                 </p>
                 <input type="hidden" name="orderId" value={order.id} />
                 <input
@@ -150,7 +176,7 @@ export default async function AdminOrderDetailPage({
                   className="h-10 w-full rounded-xl border border-border px-3 text-sm"
                 />
                 <Button type="submit" size="sm" variant="outline">
-                  Позначити оплаченим
+                  Підтвердити оплату
                 </Button>
               </form>
             ) : null}

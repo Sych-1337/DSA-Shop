@@ -1,40 +1,37 @@
-# Security
+# Security (as implemented)
 
-## Principles
+## Auth
 
-- Secrets only via environment variables
-- Zod validation on all inputs
-- Server-side permission checks
-- CSRF-safe mutations (SameSite cookies + origin checks / server actions patterns)
-- Rate limiting on auth, checkout, webhooks
-- Password hashing via Better Auth
-- Webhook signature verification + replay protection via unique event ids
-- Idempotency keys on checkout payment initiation
-- Encrypt sensitive integration settings
-- File uploads: MIME, size, safe processing
-- No unsanitized HTML
-- Prisma parameterized queries
-- Audit log for sensitive changes (no passwords/secrets in audit payloads)
-- Separate development and production configs
-- Destructive admin actions: confirmation + optional reason
+- Better Auth email/password; admin requires active `StaffProfile`
+- `ADMIN_AUTH_BYPASS` ignored when `NODE_ENV=production`
+- Admin `?next=` sanitized to `/admin…` paths only (`safeAdminNext`)
+- `trustedOrigins` includes `APP_URL`, `BETTER_AUTH_URL`, `RENDER_EXTERNAL_URL`, `AUTH_TRUSTED_ORIGINS`
 
-## Money & inventory
+## Payments
 
-- No float money
-- Server recalculates cart/checkout totals
-- Stock changes only through movements inside transactions
-- Overselling protection: transactional available check + row lock/version
+- Soft launch: **prepaid only** (`ONLINE` / `BANK_TRANSFER`). COD not offered in checkout.
+- Mock settle + mock webhook allowed only when `PAYMENT_PROVIDER=mock` **and** `NODE_ENV !== production`
+- Mock webhook requires `PAYMENT_WEBHOOK_SECRET`
+- WayForPay webhook verifies merchant signature
+- Order pay/success pages require HMAC access token (order + email)
+- Manual mark-paid requires `payments.manualMark` + audit log
 
-## Privacy
+## Admin RBAC
 
-- No card data stored
-- Consent storage for analytics/marketing
-- Account anonymization/deletion path
-- Error logs must not leak secrets or PII unnecessarily
+- Layout `requireStaff`; pages call `requirePermission` matching nav
+- Mutations use `assertPermission`
+- Staff lifecycle: `/admin/staff` (`staff.manage`)
 
-## Admin
+## Rate limits
 
-- Strong passwords, verified email
-- Session revocation
-- Login audit
-- Role least privilege
+- In-memory fixed window (single instance): checkout, webhooks, cron
+- Contact / track-order should stay rate-limited at action layer
+
+## Headers
+
+- CSP / frame / nosniff via `next.config.ts`
+
+## Ops
+
+- Force HTTPS redirect in `src/proxy.ts` when `x-forwarded-proto=http` in production
+- Cron cancels unpaid prepaid orders after `UNPAID_ORDER_CANCEL_HOURS` (default 48)

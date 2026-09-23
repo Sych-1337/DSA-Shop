@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { getOrderByNumber } from "@/features/checkout/service";
 import { Link } from "@/i18n/navigation";
 import { formatMoney } from "@/lib/money";
+import { verifyOrderAccessToken } from "@/lib/security/order-access";
 
 export default async function CheckoutSuccessPage({
   searchParams,
@@ -15,10 +16,13 @@ export default async function CheckoutSuccessPage({
   const tCart = await getTranslations("cart");
   const params = await searchParams;
   const orderNumber = typeof params.order === "string" ? params.order : null;
-  if (!orderNumber) notFound();
+  const token = typeof params.token === "string" ? params.token : null;
+  if (!orderNumber || !token) notFound();
 
   const order = await getOrderByNumber(orderNumber);
-  if (!order) notFound();
+  if (!order || !verifyOrderAccessToken(token, order.orderNumber, order.customerEmail)) {
+    notFound();
+  }
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-16 text-center">
@@ -44,16 +48,14 @@ export default async function CheckoutSuccessPage({
       </ul>
 
       <div className="mt-8 flex flex-wrap justify-center gap-3">
-        <Button href="/catalog">{tCart("continue")}</Button>
         <Button href={`/track-order?order=${order.orderNumber}`} variant="secondary">
           {t("track")}
         </Button>
+        <Button href="/">{t("toHome")}</Button>
+        <Button href="/catalog" variant="outline">
+          {tCart("continue")}
+        </Button>
       </div>
-      <p className="mt-6 text-xs text-muted-foreground">
-        <Link href="/" className="hover:text-primary">
-          {t("toHome")}
-        </Link>
-      </p>
     </main>
   );
 }

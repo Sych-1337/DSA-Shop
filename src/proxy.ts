@@ -20,6 +20,18 @@ function stripLocalePrefix(pathname: string) {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Soft-launch: never serve the store over plain HTTP in production.
+  const proto = request.headers.get("x-forwarded-proto");
+  if (
+    process.env.NODE_ENV === "production" &&
+    proto === "http" &&
+    !pathname.startsWith("/api/health")
+  ) {
+    const httpsUrl = request.nextUrl.clone();
+    httpsUrl.protocol = "https:";
+    return NextResponse.redirect(httpsUrl, 308);
+  }
+
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-pathname", pathname);
 

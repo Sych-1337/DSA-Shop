@@ -37,10 +37,12 @@ export async function createCheckoutOrder(input: CheckoutInput) {
     include: { payments: true },
   });
   if (existing) {
+    const { createOrderAccessToken } = await import("@/lib/security/order-access");
+    const token = createOrderAccessToken(existing.orderNumber, existing.customerEmail);
     if (existing.paymentStatus === PaymentStatus.PAID) {
       return {
         order: existing,
-        redirectUrl: `/checkout/success?order=${existing.orderNumber}`,
+        redirectUrl: `/checkout/success?order=${existing.orderNumber}&token=${token}`,
         reused: true as const,
       };
     }
@@ -48,7 +50,7 @@ export async function createCheckoutOrder(input: CheckoutInput) {
       order: existing,
       redirectUrl:
         existing.payments[0]?.redirectUrl ??
-        `/checkout/pay?order=${existing.orderNumber}`,
+        `/checkout/pay?order=${existing.orderNumber}&token=${token}`,
       reused: true as const,
     };
   }
@@ -122,7 +124,10 @@ export async function createCheckoutOrder(input: CheckoutInput) {
         shippingAmount,
         totalAmount,
         couponCode: totals.couponCode,
-        paymentMethod: PaymentMethod.ONLINE,
+        paymentMethod:
+          input.paymentMethod === "ONLINE"
+            ? PaymentMethod.ONLINE
+            : PaymentMethod.BANK_TRANSFER,
         shippingMethod: input.shippingMethod,
         shippingCity: input.city,
         shippingWarehouseRef: input.warehouseRef,
@@ -216,36 +221,84 @@ export async function createCheckoutOrder(input: CheckoutInput) {
     totalAmount: order.totalAmount,
   });
 
+  const { createOrderAccessToken } = await import("@/lib/security/order-access");
+  const accessToken = createOrderAccessToken(order.orderNumber, input.email);
+  const appUrl = (process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+
+  const paymentMethod =
+    input.paymentMethod === "ONLINE" ? PaymentMethod.ONLINE : PaymentMethod.BANK_TRANSFER;
+
+  if (paymentMethod === PaymentMethod.BANK_TRANSFER) {
+    await prisma.payment.create({
+      data: {
+        orderId: order.id,
+        provider: "bank_transfer",
+        externalPaymentId: `bank_${order.orderNumber}`,
+        amount: order.totalAmount,
+        currency: order.currency,
+        status: PaymentStatus.PENDING,
+        redirectUrl: `/checkout/pay?order=${order.orderNumber}&token=${accessToken}`,
+      },
+    });
+
+    const { sendBankTransferInstructionsEmail } = await import("@/features/checkout/emails");
+    await sendBankTransferInstructionsEmail({
+      to: input.email,
+      orderNumber: order.orderNumber,
+      totalAmount: order.totalAmount,
+    });
+
+    await clearCart(cart.id);
+
+    return {
+      order,
+      redirectUrl: `/checkout/pay?order=${order.orderNumber}&token=${accessToken}`,
+      reused: false as const,
+    };
+  }
+
   const paymentProvider = getPaymentProvider();
+  const providerName = (process.env.PAYMENT_PROVIDER ?? "mock").toLowerCase();
+  const callbackPath =
+    providerName === "wayforpay"
+      ? "/webhooks/payments/wayforpay"
+      : "/webhooks/payments/mock";
+
   const payment = await paymentProvider.createPayment({
     orderId: order.id,
     orderNumber: order.orderNumber,
     amount: order.totalAmount,
     currency: order.currency,
     description: `Замовлення ${order.orderNumber}`,
-    returnUrl: `${process.env.APP_URL ?? "http://localhost:3000"}/checkout/success?order=${order.orderNumber}`,
-    callbackUrl: `${process.env.APP_URL ?? "http://localhost:3000"}/webhooks/payments/mock`,
+    returnUrl: `${appUrl}/uk/checkout/success?order=${order.orderNumber}&token=${accessToken}`,
+    callbackUrl: `${appUrl}${callbackPath}`,
     customerEmail: input.email,
   });
+
+  const redirectUrl =
+    providerName === "mock"
+      ? `/checkout/pay?order=${order.orderNumber}&token=${accessToken}`
+      : payment.redirectUrl.includes("token=")
+        ? payment.redirectUrl
+        : `${payment.redirectUrl}${payment.redirectUrl.includes("?") ? "&" : "?"}token=${accessToken}`;
 
   await prisma.payment.create({
     data: {
       orderId: order.id,
-      provider: "mock",
+      provider: providerName,
       externalPaymentId: payment.externalPaymentId,
       amount: order.totalAmount,
       currency: order.currency,
       status: PaymentStatus.PENDING,
-      redirectUrl: payment.redirectUrl,
+      redirectUrl,
     },
   });
 
-  // Cart cleared on order create; stock held by reservation until pay / expire.
   await clearCart(cart.id);
 
   return {
     order,
-    redirectUrl: payment.redirectUrl,
+    redirectUrl,
     reused: false as const,
   };
 }
@@ -255,11 +308,14 @@ export async function confirmMockPayment(input: {
   externalPaymentId: string;
   amount: number;
   eventId: string;
+  provider?: string;
+  reason?: string;
 }) {
+  const provider = input.provider ?? "mock";
   const existingEvent = await prisma.webhookEvent.findUnique({
     where: {
       provider_externalEventId: {
-        provider: "mock",
+        provider,
         externalEventId: input.eventId,
       },
     },
@@ -271,13 +327,13 @@ export async function confirmMockPayment(input: {
   await prisma.webhookEvent.upsert({
     where: {
       provider_externalEventId: {
-        provider: "mock",
+        provider,
         externalEventId: input.eventId,
       },
     },
     update: {},
     create: {
-      provider: "mock",
+      provider,
       externalEventId: input.eventId,
       eventType: "payment.paid",
       payload: input,
@@ -286,7 +342,10 @@ export async function confirmMockPayment(input: {
 
   await prisma.$transaction(async (tx) => {
     const payment = await tx.payment.findFirst({
-      where: { externalPaymentId: input.externalPaymentId, provider: "mock" },
+      where: {
+        externalPaymentId: input.externalPaymentId,
+        OR: [{ provider }, { orderId: input.orderId }],
+      },
     });
     if (!payment) throw new Error("Payment not found");
 
@@ -319,7 +378,7 @@ export async function confirmMockPayment(input: {
         field: "paymentStatus",
         oldValue: PaymentStatus.PENDING,
         newValue: PaymentStatus.PAID,
-        reason: "Mock payment webhook",
+        reason: input.reason ?? `Payment confirmed (${provider})`,
       },
     });
 
@@ -356,7 +415,7 @@ export async function confirmMockPayment(input: {
     await tx.webhookEvent.update({
       where: {
         provider_externalEventId: {
-          provider: "mock",
+          provider,
           externalEventId: input.eventId,
         },
       },
@@ -429,6 +488,9 @@ export async function confirmMockPayment(input: {
 
   return { duplicate: false as const };
 }
+
+/** Alias for non-mock providers / admin manual confirm. */
+export const confirmOrderPayment = confirmMockPayment;
 
 export type MockPaymentOutcome =
   | "paid"
@@ -512,7 +574,10 @@ export async function resetMockPaymentForRetry(input: {
 }) {
   await prisma.$transaction(async (tx) => {
     const payment = await tx.payment.findFirst({
-      where: { externalPaymentId: input.externalPaymentId, provider: "mock" },
+      where: {
+        orderId: input.orderId,
+        externalPaymentId: input.externalPaymentId,
+      },
     });
     if (!payment) throw new Error("Payment not found");
     if (payment.status === PaymentStatus.PAID) {

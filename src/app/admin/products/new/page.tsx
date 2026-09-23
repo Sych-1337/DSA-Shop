@@ -1,4 +1,5 @@
 import { AdminProductForm } from "@/components/admin/product-form";
+import { requirePermission } from "@/lib/auth/rbac";
 import {
   listActiveBrands,
   listActiveCategories,
@@ -6,6 +7,7 @@ import {
 } from "@/features/catalog/service";
 
 export default async function NewProductPage() {
+  await requirePermission("products.write", "/admin/products/new");
   const [categories, fandoms, brands] = await Promise.all([
     listActiveCategories(),
     listActiveFandoms(),

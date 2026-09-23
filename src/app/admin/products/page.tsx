@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { listAdminProducts } from "@/features/catalog/service";
 import { formatMoney } from "@/lib/money";
 import { ProductStatus } from "@/generated/prisma";
+import { requirePermission } from "@/lib/auth/rbac";
 
 export default async function AdminProductsPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await requirePermission("products.read", "/admin/products");
   const params = await searchParams;
   const q = typeof params.q === "string" ? params.q : undefined;
   const status =
@@ -25,6 +27,12 @@ export default async function AdminProductsPage({
         <div>
           <h1 className="text-display text-3xl font-semibold">Товари</h1>
           <p className="mt-1 text-sm text-muted-foreground">Всього: {total}</p>
+          <ol className="mt-3 list-decimal space-y-1 pl-5 text-xs text-muted-foreground">
+            <li>Категорія / фандом</li>
+            <li>Товар + варіант (SKU, ціна, склад)</li>
+            <li>Хоча б одне фото</li>
+            <li>Статус DRAFT → перевірка → PUBLISHED</li>
+          </ol>
         </div>
         <Button href="/admin/products/new">Додати товар</Button>
       </div>

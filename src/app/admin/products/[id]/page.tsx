@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { AdminProductForm } from "@/components/admin/product-form";
 import { parseCustomSpecs } from "@/features/catalog/custom-specs";
+import { requirePermission } from "@/lib/auth/rbac";
 import {
   getAdminProductById,
   listActiveBrands,
@@ -10,6 +11,7 @@ import {
 } from "@/features/catalog/service";
 
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
+  await requirePermission("products.read", "/admin/products");
   const { id } = await params;
   const [product, categories, fandoms, brands] = await Promise.all([
     getAdminProductById(id),

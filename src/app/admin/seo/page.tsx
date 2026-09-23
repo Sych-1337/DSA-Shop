@@ -4,8 +4,10 @@ import {
   toggleRedirectAction,
 } from "@/features/content/actions";
 import { listRedirects, listSeoMeta } from "@/features/seo/service";
+import { requirePermission } from "@/lib/auth/rbac";
 
 export default async function AdminSeoPage() {
+  await requirePermission("seo.write", "/admin/seo");
   const [metas, redirects] = await Promise.all([listSeoMeta(), listRedirects()]);
 
   return (

@@ -2,9 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { confirmMockPayment } from "@/features/checkout/service";
 import { prisma } from "@/lib/db/prisma";
+import { isMockPaymentAllowed } from "@/lib/security/mock-payments";
 import { rateLimit } from "@/lib/security/rate-limit";
 
 export async function POST(request: NextRequest) {
+  if (!isMockPaymentAllowed()) {
+    return NextResponse.json({ error: "Gone" }, { status: 410 });
+  }
+
+  const secret = process.env.PAYMENT_WEBHOOK_SECRET?.trim();
+  const headerSecret =
+    request.headers.get("x-webhook-secret") ||
+    request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  if (!secret || headerSecret !== secret) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   const limited = rateLimit({ key: `webhook:mock:${ip}`, limit: 60, windowMs: 60_000 });
   if (!limited.ok) {
@@ -48,6 +61,7 @@ export async function POST(request: NextRequest) {
       externalPaymentId: payload.paymentId,
       amount: payload.amount,
       eventId: payload.eventId,
+      provider: "mock",
     });
     return NextResponse.json({ ok: true, ...result });
   }

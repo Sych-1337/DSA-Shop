@@ -1,52 +1,31 @@
 # Integrations
 
-All external systems behind provider interfaces. Local default: **mock**.
+All external systems behind provider interfaces.
 
-## Interfaces
+## PaymentProvider
 
-### PaymentProvider
+- `createPayment` / `verifyWebhook` / `getPaymentStatus` / `refund`
+- Drivers: `PAYMENT_PROVIDER=mock` (dev only) | `wayforpay`
+- Soft launch methods: `BANK_TRANSFER` (FOP + admin confirm) | `ONLINE` (WayForPay)
+- Webhooks: `/webhooks/payments/wayforpay`, `/webhooks/payments/mock` (non-prod + secret)
 
-- `createPayment`
-- `verifyWebhook`
-- `getPaymentStatus`
-- `refund`
+## ShippingProvider
 
-### ShippingProvider
+- Still `mock` for quotes / cities. Admin saves real TTN manually.
 
-- City / warehouse / locker / address selection
-- Rate quote, free-shipping rules
-- Create/cancel waybill, tracking, webhook/polling
+## EmailProvider
 
-### EmailProvider / SmsProvider
+- `mock` | `resend` | `smtp`
+- Env: `EMAIL_FROM`, `RESEND_API_KEY` or `SMTP_*`
 
-- Transactional templates
-- Marketing only with consent
+## StorageProvider
 
-### StorageProvider
+- `local` (Render disk) | `supabase`
 
-- S3-compatible upload/delete/signed URL
-- Mock: local filesystem or in-memory for tests
+## AnalyticsProvider
 
-### AnalyticsProvider
+- `mock` | `firebase` / GA4
 
-- Ecommerce events (`view_item`, `add_to_cart`, `begin_checkout`, `purchase`, `search`, …)
-- Internal Postgres `AnalyticsEvent` + `DailyMetric` always on
-- `ANALYTICS_PROVIDER=mock` — console stub
-- `ANALYTICS_PROVIDER=firebase` — GA4 Measurement Protocol (server) + client gtag via `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID` / `GA_MEASUREMENT_ID`
-- Client: `SiteAnalytics` in store layout (page_view)
+## Config
 
-
-## Configuration
-
-- Provider selection via env (`PAYMENT_PROVIDER=mock`, etc.)
-- Secrets encrypted at rest when stored in DB settings
-- Webhook secrets in env
-- Registry maps provider name → implementation
-
-## Ukrainian providers
-
-Real LiqPay/Mono/Nova Poshta adapters added later without changing domain services — only new adapter classes + config.
-
-## Idempotency
-
-`WebhookEvent` unique on `(provider, externalEventId)`. Duplicate deliveries return success without re-applying side effects.
+See `.env.example` and `docs/LAUNCH_CHECKLIST.md`.

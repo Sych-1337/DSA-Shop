@@ -7,8 +7,10 @@ import {
 } from "@/features/commission/actions";
 import { getCommissionDashboard } from "@/features/commission/service";
 import { formatMoney } from "@/lib/money";
+import { requirePermission } from "@/lib/auth/rbac";
 
 export default async function AdminCommissionsPage() {
+  await requirePermission("commissions.read", "/admin/commissions");
   const { agreement, periods, cumulativePayout, currentRateBps } = await getCommissionDashboard();
 
   return (

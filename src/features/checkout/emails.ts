@@ -1,4 +1,5 @@
 import { formatMoney } from "@/lib/money";
+import { getFopRequisites } from "@/lib/commerce/fop";
 import { getEmailProvider } from "@/lib/providers";
 
 function shell(title: string, body: string) {
@@ -7,7 +8,7 @@ function shell(title: string, body: string) {
     <p style="color:#ff3d8d;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:12px">D&A · Dreams & Anime</p>
     <h1 style="font-size:22px;margin:8px 0 16px">${title}</h1>
     ${body}
-    <p style="margin-top:24px;font-size:12px;color:#9ca3af">Це демо-лист (stub). Реальний SMTP підключимо пізніше.</p>
+    <p style="margin-top:24px;font-size:12px;color:#9ca3af">D&A Shop · лист надіслано автоматично</p>
   </div></body></html>`;
 }
 
@@ -25,7 +26,34 @@ export async function sendOrderCreatedEmail(input: {
       "Замовлення створено",
       `<p>Дякуємо! Номер замовлення: <strong>${input.orderNumber}</strong></p>
        <p>Сума до оплати: <strong>${amount}</strong></p>
-       <p>Оплатіть замовлення на сторінці checkout — після оплати ми передамо його на збірку.</p>`,
+       <p>Оплата лише передплатою (переказ на ФОП або онлайн).</p>`,
+    ),
+  });
+}
+
+export async function sendBankTransferInstructionsEmail(input: {
+  to: string;
+  orderNumber: string;
+  totalAmount: number;
+}) {
+  const amount = formatMoney(input.totalAmount);
+  const fop = getFopRequisites(input.orderNumber);
+  const details = fop
+    ? `<p><strong>${fop.name}</strong></p>
+       <p>IBAN: <code>${fop.iban}</code></p>
+       ${fop.edrpou ? `<p>ЄДРПОУ/ІПН: ${fop.edrpou}</p>` : ""}
+       ${fop.bankName ? `<p>Банк: ${fop.bankName}</p>` : ""}
+       <p>Призначення: <strong>${fop.purpose}</strong></p>`
+    : `<p>Реквізити ФОП будуть на сторінці оплати після налаштування магазину.</p>`;
+
+  await getEmailProvider().send({
+    to: input.to,
+    subject: `Реквізити для оплати · ${input.orderNumber}`,
+    text: `Оплатіть ${amount} замовлення ${input.orderNumber} переказом на ФОП. Призначення: Замовлення ${input.orderNumber}`,
+    html: shell(
+      "Реквізити для оплати",
+      `<p>Сума: <strong>${amount}</strong></p>${details}
+       <p>Після надходження коштів ми підтвердимо оплату і зберемо посилку.</p>`,
     ),
   });
 }
@@ -61,8 +89,8 @@ export async function sendOrderPaymentFailedEmail(input: {
     html: shell(
       "Оплату не завершено",
       `<p>Не вдалося завершити оплату замовлення <strong>${input.orderNumber}</strong>.</p>
-       <p>Причина (stub): ${input.reason}</p>
-       <p>Ви можете спробувати оплату знову — товари збережені в кошику / замовленні.</p>`,
+       <p>Причина: ${input.reason}</p>
+       <p>Спробуйте оплату знову з листа / сторінки оплати.</p>`,
     ),
   });
 }

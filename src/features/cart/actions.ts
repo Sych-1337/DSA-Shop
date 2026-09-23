@@ -121,7 +121,7 @@ export async function placeOrderAction(formData: FormData) {
     shippingMethod: formData.get("shippingMethod")?.toString() ?? "WAREHOUSE",
     warehouseRef: formData.get("warehouseRef")?.toString() || undefined,
     addressLine: formData.get("addressLine")?.toString() || undefined,
-    paymentMethod: "ONLINE",
+    paymentMethod: formData.get("paymentMethod")?.toString() ?? "BANK_TRANSFER",
     customerNote: formData.get("customerNote")?.toString() || undefined,
     idempotencyKey: formData.get("idempotencyKey")?.toString(),
     couponCode: formData.get("couponCode")?.toString() || undefined,

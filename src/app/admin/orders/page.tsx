@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { listAdminOrders } from "@/features/orders/admin-service";
 import { OrderStatus, PaymentStatus } from "@/generated/prisma";
 import { formatMoney } from "@/lib/money";
+import { requirePermission } from "@/lib/auth/rbac";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,7 @@ export default async function AdminOrdersPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await requirePermission("orders.read", "/admin/orders");
   const params = await searchParams;
   const q = typeof params.q === "string" ? params.q : undefined;
   const status =

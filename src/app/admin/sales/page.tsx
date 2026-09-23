@@ -1,9 +1,11 @@
 import { SalesBoard, type SalesOrderCard } from "@/components/admin/sales-board";
 import { listOrdersForKanban } from "@/features/orders/admin-service";
+import { requirePermission } from "@/lib/auth/rbac";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSalesKanbanPage() {
+  await requirePermission("orders.read", "/admin/sales");
   const orders = await listOrdersForKanban();
 
   const cards: SalesOrderCard[] = orders.map((order) => ({

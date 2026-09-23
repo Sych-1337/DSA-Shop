@@ -81,20 +81,11 @@ export async function StoreFooter({
         <div className="rounded-2xl border border-primary/30 bg-white/5 p-5 dark:shadow-[var(--shadow-glow)]">
           <p className="text-display text-lg font-semibold">{t("newsletter")}</p>
           <p className="mt-2 text-sm text-chrome-foreground/65">{t("newsletterHint")}</p>
-          <form className="mt-4 flex flex-col gap-2 sm:flex-row" action={`/${locale}/contacts`}>
-            <label htmlFor="newsletter-email" className="sr-only">
-              Email
-            </label>
-            <input
-              id="newsletter-email"
-              type="email"
-              placeholder="email@example.com"
-              className="h-11 min-w-0 flex-1 rounded-xl border border-white/10 bg-black/20 px-3 text-sm"
-            />
-            <Button type="submit" size="md" className="w-full shrink-0 sm:w-auto">
-              {t("subscribe")}
-            </Button>
-          </form>
+          <p className="mt-4 text-sm">
+            <Link href="/contacts" className="font-medium text-primary hover:underline">
+              {t("subscribe")} →
+            </Link>
+          </p>
         </div>
       </div>
 

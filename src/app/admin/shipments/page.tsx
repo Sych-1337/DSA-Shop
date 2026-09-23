@@ -1,10 +1,12 @@
 import Link from "next/link";
 
 import { prisma } from "@/lib/db/prisma";
+import { requirePermission } from "@/lib/auth/rbac";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminShipmentsPage() {
+  await requirePermission("orders.read", "/admin/shipments");
   const shipments = await prisma.shipment.findMany({
     include: { order: true },
     orderBy: { createdAt: "desc" },

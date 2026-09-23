@@ -4,8 +4,10 @@ import {
 } from "@/features/content/actions";
 import { listAllBlogPosts, listHomepageBlocks } from "@/features/content/service";
 import { ContentStatus } from "@/generated/prisma";
+import { requirePermission } from "@/lib/auth/rbac";
 
 export default async function AdminContentPage() {
+  await requirePermission("content.write", "/admin/content");
   const [blocks, posts] = await Promise.all([listHomepageBlocks(), listAllBlogPosts()]);
 
   return (

@@ -5,11 +5,12 @@ import { FormEvent, useState, useTransition } from "react";
 
 import { authClient } from "@/lib/auth/client";
 import { Button } from "@/components/ui/button";
+import { safeAdminNext } from "@/lib/security/admin-next";
 
 export function AdminLoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") || "/admin";
+  const next = safeAdminNext(params.get("next"));
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 

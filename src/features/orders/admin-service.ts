@@ -177,7 +177,7 @@ export async function addOrderNote(input: {
   });
 }
 
-/** Manual mark paid (stub acquiring / bank transfer) — runs same sale conversion as mock webhook. */
+/** Confirm FOP / manual prepaid — same inventory conversion as acquiring webhook. */
 export async function markOrderPaidManually(input: {
   orderId: string;
   reason?: string;
@@ -192,14 +192,14 @@ export async function markOrderPaidManually(input: {
     return { alreadyPaid: true as const };
   }
 
-  let payment =
-    order.payments.find((row) => row.provider === "mock") ?? order.payments[0] ?? null;
+  let payment = order.payments[0] ?? null;
+  const provider = payment?.provider ?? "bank_transfer";
 
   if (!payment) {
     payment = await prisma.payment.create({
       data: {
         orderId: order.id,
-        provider: "mock",
+        provider,
         externalPaymentId: `manual_${order.id}`,
         amount: order.totalAmount,
         currency: order.currency,
@@ -213,7 +213,7 @@ export async function markOrderPaidManually(input: {
   if (!payment.externalPaymentId) {
     payment = await prisma.payment.update({
       where: { id: payment.id },
-      data: { externalPaymentId, provider: "mock" },
+      data: { externalPaymentId },
     });
   }
 
@@ -232,15 +232,76 @@ export async function markOrderPaidManually(input: {
     externalPaymentId,
     amount: payment.amount,
     eventId: `manual_paid_${order.id}_${Date.now()}`,
+    provider,
+    reason: input.reason?.trim() || "Admin confirmed prepaid payment",
   });
 
   await addOrderNote({
     orderId: order.id,
-    body: input.reason?.trim() || "Позначено як оплачено вручну",
+    body: input.reason?.trim() || "Підтверджено оплату (ФОП / вручну)",
     actorId: input.actorId,
   });
 
+  const { writeAuditLog } = await import("@/lib/security/audit");
+  await writeAuditLog({
+    actorId: input.actorId,
+    action: "payment.manual_mark",
+    entityType: "Order",
+    entityId: order.id,
+    reason: input.reason,
+  });
+
   return { alreadyPaid: false as const };
+}
+
+/** Save tracking number without mock label generation. */
+export async function saveShipmentTracking(input: {
+  orderId: string;
+  trackingNumber: string;
+  actorId?: string;
+}) {
+  const trackingNumber = input.trackingNumber.trim();
+  if (trackingNumber.length < 3) {
+    throw new Error("Вкажіть номер ТТН");
+  }
+
+  const order = await prisma.order.findUniqueOrThrow({
+    where: { id: input.orderId },
+    include: { shipments: true },
+  });
+
+  const existing = order.shipments[0];
+  if (existing) {
+    await prisma.shipment.update({
+      where: { id: existing.id },
+      data: {
+        trackingNumber,
+        status: FulfillmentStatus.LABEL_CREATED,
+      },
+    });
+  } else {
+    await prisma.shipment.create({
+      data: {
+        orderId: order.id,
+        provider: "manual",
+        externalShipmentId: `ttn_${order.id}`,
+        trackingNumber,
+        status: FulfillmentStatus.LABEL_CREATED,
+        method: order.shippingMethod,
+      },
+    });
+  }
+
+  await prisma.order.update({
+    where: { id: order.id },
+    data: { fulfillmentStatus: FulfillmentStatus.LABEL_CREATED },
+  });
+
+  await addOrderNote({
+    orderId: order.id,
+    body: `ТТН збережено: ${trackingNumber}`,
+    actorId: input.actorId,
+  });
 }
 
 export async function createShipmentForOrder(orderId: string) {

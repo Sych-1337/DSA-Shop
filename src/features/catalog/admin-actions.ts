@@ -504,6 +504,21 @@ export async function upsertAdminProduct(formData: FormData) {
   }
 
   const data = parsed.data;
+
+  if (data.status === ProductStatus.PUBLISHED) {
+    const hasPrice = data.priceAmount > 0;
+    const hasSku = Boolean(data.sku?.trim() && data.sku !== "SKU");
+    const hasImage = (data.imageUrls?.length ?? 0) > 0 || Boolean(data.imageUrl?.trim());
+    const hasCategory = Boolean(data.primaryCategoryId || data.newCategoryName?.trim());
+    if (!hasPrice || !hasSku || !hasImage || !hasCategory) {
+      return {
+        ok: false as const,
+        error:
+          "Для публікації потрібні: категорія, SKU, ціна > 0, хоча б одне фото. Збережіть як DRAFT або дозаповніть поля.",
+      };
+    }
+  }
+
   const warehouse = await prisma.warehouse.findFirst({ where: { isDefault: true } });
   if (!warehouse) {
     return { ok: false as const, error: "Default warehouse missing" };
