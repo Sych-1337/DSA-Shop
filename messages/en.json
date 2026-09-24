@@ -282,7 +282,9 @@
     "bankIban": "Recipient IBAN",
     "bankQrTitle": "Your top-up QR",
     "bankQrLead": "Send funds quickly and conveniently!",
-    "bankQrAlt": "QR code for FOP bank transfer"
+    "bankQrAlt": "QR code for FOP bank transfer",
+    "copy": "Copy",
+    "copied": "Copied"
   },
   "blog": {
     "title": "Blog",
