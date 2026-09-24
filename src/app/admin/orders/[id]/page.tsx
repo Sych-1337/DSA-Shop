@@ -194,16 +194,27 @@ export default async function AdminOrderDetailPage({
         <h2 className="text-display text-xl font-semibold">Товари</h2>
         <ul className="mt-3 divide-y divide-border text-sm">
           {order.items.map((item) => (
-            <li key={item.id} className="flex justify-between gap-4 py-3">
-              <div>
-                <p className="font-medium">
-                  {item.productTitle} · {item.variantTitle}
-                </p>
-                <p className="text-muted-foreground text-xs">
-                  SKU {item.sku} · ×{item.quantity}
-                </p>
+            <li key={item.id} className="flex items-center justify-between gap-4 py-3">
+              <div className="flex min-w-0 items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={
+                    item.imageUrl ||
+                    `/api/placeholder?title=${encodeURIComponent(item.productTitle.slice(0, 1))}&hue=320`
+                  }
+                  alt=""
+                  className="size-12 shrink-0 rounded-lg border border-border object-cover bg-surface-muted"
+                />
+                <div className="min-w-0">
+                  <p className="truncate font-medium">
+                    {item.productTitle} · {item.variantTitle}
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    SKU {item.sku} · ×{item.quantity}
+                  </p>
+                </div>
               </div>
-              <p className="font-semibold">{formatMoney(item.lineTotalAmount)}</p>
+              <p className="shrink-0 font-semibold">{formatMoney(item.lineTotalAmount)}</p>
             </li>
           ))}
         </ul>

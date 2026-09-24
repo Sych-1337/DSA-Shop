@@ -61,12 +61,23 @@ export default async function CheckoutPayPage({
       <h1 className="text-display mt-2 text-3xl font-semibold sm:text-4xl">{t("payTitle")}</h1>
       <p className="mt-3 text-muted-foreground">{t("payLead")}</p>
 
-      <ul className="mt-6 max-w-xl space-y-2 rounded-2xl border border-border bg-surface p-4 text-sm shadow-[var(--shadow-card)]">
+      <ul className="mt-6 max-w-xl space-y-3 rounded-2xl border border-border bg-surface p-4 text-sm shadow-[var(--shadow-card)]">
         {order.items.map((item) => (
-          <li key={item.id} className="flex justify-between gap-3">
-            <span className="min-w-0 truncate">
-              {item.productTitle} × {item.quantity}
-            </span>
+          <li key={item.id} className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={
+                  item.imageUrl ||
+                  `/api/placeholder?title=${encodeURIComponent(item.productTitle.slice(0, 1))}&hue=320`
+                }
+                alt=""
+                className="size-12 shrink-0 rounded-lg border border-border object-cover bg-surface-muted"
+              />
+              <span className="min-w-0 truncate">
+                {item.productTitle} × {item.quantity}
+              </span>
+            </div>
             <span className="shrink-0">{formatMoney(item.lineTotalAmount)}</span>
           </li>
         ))}

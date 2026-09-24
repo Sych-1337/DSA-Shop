@@ -41,6 +41,7 @@ export type SalesOrderCard = {
     sku: string;
     quantity: number;
     unitPriceAmount: number;
+    imageUrl?: string | null;
   }[];
 };
 
@@ -273,18 +274,29 @@ function SalesOrderCardView({
           <Package className="size-3.5" />
           Товари
         </p>
-        <ul className="space-y-1.5 text-sm">
+        <ul className="space-y-2 text-sm">
           {order.items.map((item) => (
-            <li key={item.id} className="flex justify-between gap-3">
-              <span className="min-w-0">
-                <span className="font-medium">{item.productTitle}</span>
-                {item.variantTitle && item.variantTitle !== "Default" ? (
-                  <span className="text-muted-foreground"> · {item.variantTitle}</span>
-                ) : null}
-                <span className="block text-xs text-muted-foreground">
-                  {item.sku} · ×{item.quantity}
+            <li key={item.id} className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2.5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={
+                    item.imageUrl ||
+                    `/api/placeholder?title=${encodeURIComponent(item.productTitle.slice(0, 1))}&hue=320`
+                  }
+                  alt=""
+                  className="size-10 shrink-0 rounded-lg border border-border object-cover bg-surface-muted"
+                />
+                <span className="min-w-0">
+                  <span className="font-medium">{item.productTitle}</span>
+                  {item.variantTitle && item.variantTitle !== "Default" ? (
+                    <span className="text-muted-foreground"> · {item.variantTitle}</span>
+                  ) : null}
+                  <span className="block text-xs text-muted-foreground">
+                    {item.sku} · ×{item.quantity}
+                  </span>
                 </span>
-              </span>
+              </div>
               <span className="shrink-0 tabular-nums">
                 {formatMoney(item.unitPriceAmount * item.quantity)}
               </span>

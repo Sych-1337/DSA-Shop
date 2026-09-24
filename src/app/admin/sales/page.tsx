@@ -34,6 +34,7 @@ export default async function AdminSalesKanbanPage() {
       sku: item.sku,
       quantity: item.quantity,
       unitPriceAmount: item.unitPriceAmount,
+      imageUrl: item.imageUrl,
     })),
   }));
 

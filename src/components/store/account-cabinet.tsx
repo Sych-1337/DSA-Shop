@@ -102,8 +102,33 @@ export function AccountCabinet({
     }
   }
 
+  const shortcuts = [
+    { href: "/account/orders", label: tPages("orders"), hint: t("ordersHint") },
+    { href: "/account/addresses", label: tPages("addresses"), hint: t("addressesHint") },
+    { href: "/track-order", label: tPages("trackOrder"), hint: t("trackHint") },
+    { href: "/wishlist", label: tPages("wishlist"), hint: t("wishlistHint") },
+    { href: "/contacts", label: tPages("contacts"), hint: t("contactsHint") },
+  ] as const;
+
   return (
     <div className="mt-8 space-y-8">
+      <section>
+        <h2 className="text-display text-xl font-semibold">{t("shortcutsTitle")}</h2>
+        <ul className="-mx-4 mt-4 flex gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-5 sm:overflow-visible sm:px-0">
+          {shortcuts.map((item) => (
+            <li key={item.href} className="min-w-[9.5rem] shrink-0 sm:min-w-0">
+              <Link
+                href={item.href}
+                className="flex h-full flex-col rounded-2xl border border-border bg-surface p-4 shadow-[var(--shadow-card)] transition hover:border-primary"
+              >
+                <p className="font-semibold leading-snug">{item.label}</p>
+                <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{item.hint}</p>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+
       {signedIn ? (
         <div>
           <Button
@@ -301,29 +326,6 @@ export function AccountCabinet({
             ))}
           </ul>
         )}
-      </section>
-
-      <section>
-        <h2 className="text-display text-xl font-semibold">{t("shortcutsTitle")}</h2>
-        <ul className="mt-4 space-y-3">
-          {[
-            { href: "/account/orders", label: tPages("orders"), hint: t("ordersHint") },
-            { href: "/account/addresses", label: tPages("addresses"), hint: t("addressesHint") },
-            { href: "/track-order", label: tPages("trackOrder"), hint: t("trackHint") },
-            { href: "/wishlist", label: tPages("wishlist"), hint: t("wishlistHint") },
-            { href: "/contacts", label: tPages("contacts"), hint: t("contactsHint") },
-          ].map((item) => (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                className="block rounded-2xl border border-border bg-surface p-5 shadow-[var(--shadow-card)] transition hover:border-primary"
-              >
-                <p className="font-semibold">{item.label}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{item.hint}</p>
-              </Link>
-            </li>
-          ))}
-        </ul>
       </section>
     </div>
   );
