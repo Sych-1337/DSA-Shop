@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useTranslations } from "next-intl";
 
 import { formatMoney } from "@/lib/money";
@@ -27,7 +26,7 @@ export function BankTransferPanel({
         <dl className="space-y-3 text-sm">
           <div>
             <dt className="text-muted-foreground">{t("bankIban")}</dt>
-            <dd className="mt-0.5 font-mono text-sm break-all font-medium">{fop.iban}</dd>
+            <dd className="mt-0.5 break-all font-mono text-sm font-medium">{fop.iban}</dd>
           </div>
           <div>
             <dt className="text-muted-foreground">{t("bankRecipient")}</dt>
@@ -58,13 +57,15 @@ export function BankTransferPanel({
           <p className="mt-1 text-sm text-muted-foreground">{t("bankQrLead")}</p>
         </div>
         <div className="mx-auto w-fit rounded-2xl bg-white p-3">
-          <Image
+          {/* Plain img — next/image optimizer broke this static asset in prod */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src={fop.qrImageUrl}
             alt={t("bankQrAlt")}
             width={220}
             height={220}
             className="size-[220px]"
-            priority
+            decoding="async"
           />
         </div>
         <dl className="space-y-1 text-sm">
