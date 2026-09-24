@@ -27,6 +27,30 @@ function trustedOrigins(): string[] {
   return [...origins];
 }
 
+const googleId = process.env.GOOGLE_CLIENT_ID?.trim();
+const googleSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
+const appleId = process.env.APPLE_CLIENT_ID?.trim();
+const appleSecret = process.env.APPLE_CLIENT_SECRET?.trim();
+
+const socialProviders = {
+  ...(googleId && googleSecret
+    ? {
+        google: {
+          clientId: googleId,
+          clientSecret: googleSecret,
+        },
+      }
+    : {}),
+  ...(appleId && appleSecret
+    ? {
+        apple: {
+          clientId: appleId,
+          clientSecret: appleSecret,
+        },
+      }
+    : {}),
+};
+
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
@@ -37,9 +61,18 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
+  socialProviders,
   user: {
     additionalFields: {},
   },
 });
 
 export type Session = typeof auth.$Infer.Session;
+
+export function isSocialAuthConfigured(provider: "google" | "apple") {
+  return Boolean(
+    provider === "google"
+      ? googleId && googleSecret
+      : appleId && appleSecret,
+  );
+}

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
 import { reportBankTransferPaidAction } from "@/features/checkout/actions";
 import { formatMoney } from "@/lib/money";
 import type { FopRequisites } from "@/lib/commerce/fop";
@@ -85,6 +86,7 @@ export function BankTransferPanel({
 }) {
   const t = useTranslations("checkout");
   const [reported, setReported] = useState(alreadyReportedPaid);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const amountLabel = formatMoney(totalAmount);
@@ -102,6 +104,7 @@ export function BankTransferPanel({
         return;
       }
       setReported(true);
+      setDialogOpen(true);
     });
   }
 
@@ -158,9 +161,14 @@ export function BankTransferPanel({
 
       <section className="rounded-2xl border border-border bg-surface p-5 shadow-[var(--shadow-card)]">
         {reported ? (
-          <div className="space-y-2 text-center sm:text-left">
-            <p className="text-base font-semibold text-success">{t("paidReportedTitle")}</p>
-            <p className="text-sm text-muted-foreground">{t("paidReportedLead")}</p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-base font-semibold text-success">{t("paidReportedTitle")}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{t("paidReportedLead")}</p>
+            </div>
+            <Button type="button" variant="secondary" size="sm" onClick={() => setDialogOpen(true)}>
+              {t("paidThanksOpen")}
+            </Button>
           </div>
         ) : (
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -185,6 +193,29 @@ export function BankTransferPanel({
           </p>
         ) : null}
       </section>
+
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
+        <p className="text-display text-xl font-semibold text-success">{t("paidThanksTitle")}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{t("paidThanksLead")}</p>
+        <p className="mt-3 rounded-xl bg-surface-muted px-3 py-2 font-mono text-sm font-semibold">
+          {orderNumber}
+        </p>
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+          <Button href="/" className="w-full flex-1" size="md">
+            {t("paidThanksHome")}
+          </Button>
+          <Button href="/account/orders" variant="secondary" className="w-full flex-1" size="md">
+            {t("paidThanksOrders")}
+          </Button>
+        </div>
+        <button
+          type="button"
+          className="mt-4 w-full text-center text-xs text-muted-foreground hover:text-foreground"
+          onClick={() => setDialogOpen(false)}
+        >
+          {t("paidThanksStay")}
+        </button>
+      </Dialog>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { AccountCabinet } from "@/components/store/account-cabinet";
 import { getCustomerAccount } from "@/features/account/service";
 import { buildEntityMetadata } from "@/features/seo/service";
 import { listWishlists } from "@/features/wishlist/service";
+import { isSocialAuthConfigured } from "@/lib/auth";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("pages");
@@ -52,6 +53,10 @@ export default async function AccountPage() {
         profile={profileView}
         lists={lists}
         signedIn={Boolean(sessionUser)}
+        social={{
+          google: isSocialAuthConfigured("google"),
+          apple: isSocialAuthConfigured("apple"),
+        }}
       />
     </main>
   );
