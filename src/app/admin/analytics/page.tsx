@@ -1,3 +1,4 @@
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { getAnalyticsOverview } from "@/features/analytics/service";
 import { requirePermission } from "@/lib/auth/rbac";
 
@@ -7,14 +8,16 @@ export default async function AdminAnalyticsPage() {
     await getAnalyticsOverview(14);
 
   return (
-    <div className="space-y-10">
-      <div>
-        <h1 className="text-display text-3xl font-semibold">Analytics</h1>
-        <p className="mt-2 text-muted-foreground">
-          Події з {since.toLocaleDateString("uk-UA")} · внутрішній лог + provider{" "}
-          <code className="rounded bg-surface-muted px-1.5 py-0.5 text-xs">{provider}</code>
-        </p>
-      </div>
+    <div className="space-y-6">
+      <AdminPageHeader
+        title="Аналітика"
+        description={
+          <>
+            Події з {since.toLocaleDateString("uk-UA")} · внутрішній лог + provider{" "}
+            <code className="rounded bg-surface-muted px-1.5 py-0.5 text-xs">{provider}</code>
+          </>
+        }
+      />
 
       <section className="rounded-2xl border border-border bg-surface p-5 shadow-[var(--shadow-card)]">
         <h2 className="text-lg font-semibold">Firebase / GA4</h2>

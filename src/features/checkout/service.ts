@@ -611,9 +611,69 @@ export async function getOrderByNumber(orderNumber: string) {
       address: true,
       payments: true,
       shipments: true,
+      notes: { orderBy: { createdAt: "desc" }, take: 20 },
       statusHistory: { orderBy: { createdAt: "desc" }, take: 12 },
     },
   });
+}
+
+/** Customer clicked “I paid” on FOP pay page — queue for admin confirmation. */
+export async function reportCustomerBankTransferPaid(input: {
+  orderId: string;
+  marker: string;
+}) {
+  const order = await prisma.order.findUniqueOrThrow({
+    where: { id: input.orderId },
+    include: {
+      notes: true,
+      payments: { orderBy: { createdAt: "desc" }, take: 1 },
+    },
+  });
+
+  const already = order.notes.some((note) => note.body.includes(input.marker));
+  if (already) return { already: true as const };
+
+  await prisma.$transaction(async (tx) => {
+    if (
+      order.status === OrderStatus.NEW ||
+      order.status === OrderStatus.DRAFT
+    ) {
+      await tx.order.update({
+        where: { id: order.id },
+        data: { status: OrderStatus.AWAITING_CONFIRMATION },
+      });
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: order.id,
+          field: "status",
+          oldValue: order.status,
+          newValue: OrderStatus.AWAITING_CONFIRMATION,
+          reason: "Customer reported bank transfer paid",
+        },
+      });
+    }
+
+    await tx.orderNote.create({
+      data: {
+        orderId: order.id,
+        body: `${input.marker} Клієнт натиснув «Оплату здійснив» на сторінці ФОП-оплати. Перевірте надходження і підтвердіть оплату.`,
+        isInternal: true,
+      },
+    });
+
+    const payment = order.payments[0];
+    if (payment) {
+      await tx.paymentEvent.create({
+        data: {
+          paymentId: payment.id,
+          type: "customer_reported_paid",
+          payload: { at: new Date().toISOString() },
+        },
+      });
+    }
+  });
+
+  return { already: false as const };
 }
 
 export async function trackOrderByNumberAndEmail(orderNumber: string, email: string) {

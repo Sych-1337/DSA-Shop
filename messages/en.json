@@ -284,7 +284,13 @@
     "bankQrLead": "Send funds quickly and conveniently!",
     "bankQrAlt": "QR code for FOP bank transfer",
     "copy": "Copy",
-    "copied": "Copied"
+    "copied": "Copied",
+    "paidReportTitle": "Already paid?",
+    "paidReportLead": "Tap after the transfer — we’ll flag it in admin and verify the payment.",
+    "paidReportButton": "I’ve paid",
+    "paidReporting": "Sending…",
+    "paidReportedTitle": "Thanks! We got your notice",
+    "paidReportedLead": "We’ll verify the transfer and confirm the order. Keep your order number."
   },
   "blog": {
     "title": "Blog",

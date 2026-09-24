@@ -1,12 +1,56 @@
 import Link from "next/link";
 
+import {
+  AdminFilterBar,
+  adminFilterInputClassName,
+  adminFilterSelectClassName,
+} from "@/components/admin/admin-filter-bar";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { AdminStatusBadge } from "@/components/admin/admin-status-badge";
+import {
+  AdminEmptyRow,
+  AdminTable,
+  AdminTableHead,
+  AdminTd,
+  AdminTh,
+} from "@/components/admin/admin-table";
 import { Button } from "@/components/ui/button";
 import { listAdminOrders } from "@/features/orders/admin-service";
+import { statusLabel } from "@/features/orders/state-machine";
 import { OrderStatus, PaymentStatus } from "@/generated/prisma";
-import { formatMoney } from "@/lib/money";
+import {
+  orderStatusTone,
+  paymentStatusLabel,
+  paymentStatusTone,
+} from "@/lib/admin/labels";
 import { requirePermission } from "@/lib/auth/rbac";
+import { formatMoney } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
+
+const QUICK_STATUSES: { key: string; label: string; status?: OrderStatus }[] = [
+  { key: "all", label: "Усі" },
+  { key: "NEW", label: "Нові", status: "NEW" },
+  { key: "AWAITING_CONFIRMATION", label: "На підтвердженні", status: "AWAITING_CONFIRMATION" },
+  { key: "CONFIRMED", label: "Підтверджені", status: "CONFIRMED" },
+  { key: "PICKING", label: "Збірка", status: "PICKING" },
+  { key: "READY_TO_SHIP", label: "До відправки", status: "READY_TO_SHIP" },
+  { key: "SHIPPED", label: "В дорозі", status: "SHIPPED" },
+  { key: "DELIVERED", label: "Доставлено", status: "DELIVERED" },
+];
+
+function buildOrdersHref(input: {
+  q?: string;
+  status?: string;
+  paymentStatus?: string;
+}) {
+  const sp = new URLSearchParams();
+  if (input.q) sp.set("q", input.q);
+  if (input.status) sp.set("status", input.status);
+  if (input.paymentStatus) sp.set("paymentStatus", input.paymentStatus);
+  const qs = sp.toString();
+  return qs ? `/admin/orders?${qs}` : "/admin/orders";
+}
 
 export default async function AdminOrdersPage({
   searchParams,
@@ -27,102 +71,141 @@ export default async function AdminOrdersPage({
 
   const { orders, total } = await listAdminOrders({ q, status, paymentStatus });
 
+  const statusChips = QUICK_STATUSES.map((item) => ({
+    href: buildOrdersHref({ q, status: item.status, paymentStatus }),
+    label: item.label,
+    active: (status ?? "all") === item.key,
+  }));
+
+  const paymentChips = [
+    { key: "all", label: "Усі оплати" },
+    { key: "PENDING", label: "Очікує", paymentStatus: "PENDING" as const },
+    { key: "PAID", label: "Оплачено", paymentStatus: "PAID" as const },
+    { key: "FAILED", label: "Помилка", paymentStatus: "FAILED" as const },
+  ].map((item) => ({
+    href: buildOrdersHref({
+      q,
+      status,
+      paymentStatus: "paymentStatus" in item ? item.paymentStatus : undefined,
+    }),
+    label: item.label,
+    active: (paymentStatus ?? "all") === item.key,
+  }));
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-display text-3xl font-semibold">Замовлення</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Всього: {total}</p>
+    <div className="space-y-5">
+      <AdminPageHeader
+        title="Замовлення"
+        meta={`Знайдено: ${total}`}
+        actions={
+          <Button href="/admin/sales" variant="secondary" size="sm">
+            Sales board
+          </Button>
+        }
+      />
+
+      <AdminFilterBar chips={statusChips}>
+        <div className="flex w-full flex-wrap gap-1.5">
+          {paymentChips.map((chip) => (
+            <Link
+              key={chip.label}
+              href={chip.href}
+              className={
+                chip.active
+                  ? "inline-flex rounded-md border border-primary bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary"
+                  : "inline-flex rounded-md border border-border px-2 py-1 text-[11px] font-medium text-muted-foreground hover:border-primary/40 hover:text-foreground"
+              }
+            >
+              {chip.label}
+            </Link>
+          ))}
         </div>
-        <Button href="/admin/sales" variant="secondary" size="sm">
-          Kanban
-        </Button>
-      </div>
-
-      <form className="flex flex-wrap gap-2">
-        <input
-          name="q"
-          defaultValue={q}
-          placeholder="Номер / email / телефон..."
-          className="h-10 min-w-[220px] rounded-xl border border-border bg-surface px-3 text-sm"
-        />
-        <select
-          name="status"
-          defaultValue={status ?? ""}
-          className="h-10 rounded-xl border border-border bg-surface px-3 text-sm"
-        >
-          <option value="">Усі статуси</option>
-          {Object.values(OrderStatus).map((value) => (
-            <option key={value} value={value}>
-              {value}
-            </option>
-          ))}
-        </select>
-        <select
-          name="paymentStatus"
-          defaultValue={paymentStatus ?? ""}
-          className="h-10 rounded-xl border border-border bg-surface px-3 text-sm"
-        >
-          <option value="">Усі оплати</option>
-          {Object.values(PaymentStatus).map((value) => (
-            <option key={value} value={value}>
-              {value}
-            </option>
-          ))}
-        </select>
-        <Button type="submit" variant="secondary" size="sm">
-          Фільтр
-        </Button>
-      </form>
-
-      <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-[var(--shadow-card)]">
-        <table className="w-full min-w-[800px] text-left text-sm">
-          <thead className="border-b border-border bg-surface-muted text-muted-foreground">
-            <tr>
-              <th className="px-4 py-3 font-medium">Номер</th>
-              <th className="px-4 py-3 font-medium">Дата</th>
-              <th className="px-4 py-3 font-medium">Клієнт</th>
-              <th className="px-4 py-3 font-medium">Сума</th>
-              <th className="px-4 py-3 font-medium">Статус</th>
-              <th className="px-4 py-3 font-medium">Оплата</th>
-              <th className="px-4 py-3 font-medium">Доставка</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((order) => (
-              <tr key={order.id} className="border-b border-border last:border-0">
-                <td className="px-4 py-3">
-                  <Link href={`/admin/orders/${order.id}`} className="font-semibold text-primary">
-                    {order.orderNumber}
-                  </Link>
-                </td>
-                <td className="px-4 py-3 text-muted-foreground">
-                  {order.createdAt.toLocaleString("uk-UA")}
-                </td>
-                <td className="px-4 py-3">
-                  <p>
-                    {order.customerFirstName} {order.customerLastName}
-                  </p>
-                  <p className="text-muted-foreground text-xs">{order.customerEmail}</p>
-                </td>
-                <td className="px-4 py-3">{formatMoney(order.totalAmount)}</td>
-                <td className="px-4 py-3">
-                  <span className="rounded-full bg-surface-muted px-2 py-1 text-xs">{order.status}</span>
-                </td>
-                <td className="px-4 py-3 text-xs">{order.paymentStatus}</td>
-                <td className="px-4 py-3 text-xs">{order.fulfillmentStatus}</td>
-              </tr>
+        <form method="get" className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+          <input
+            name="q"
+            defaultValue={q}
+            placeholder="Номер / email / телефон…"
+            className={adminFilterInputClassName("flex-1")}
+          />
+          {status ? <input type="hidden" name="status" value={status} /> : null}
+          <select
+            name="paymentStatus"
+            defaultValue={paymentStatus ?? ""}
+            className={adminFilterSelectClassName()}
+          >
+            <option value="">Усі оплати</option>
+            {Object.values(PaymentStatus).map((value) => (
+              <option key={value} value={value}>
+                {paymentStatusLabel(value)}
+              </option>
             ))}
-            {orders.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-muted-foreground">
-                  Замовлень не знайдено
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
+          </select>
+          <Button type="submit" variant="secondary" size="sm">
+            Пошук
+          </Button>
+          {q || status || paymentStatus ? (
+            <Button href="/admin/orders" variant="outline" size="sm">
+              Скинути
+            </Button>
+          ) : null}
+        </form>
+      </AdminFilterBar>
+
+      <AdminTable minWidth="860px">
+        <AdminTableHead>
+          <tr>
+            <AdminTh>Номер</AdminTh>
+            <AdminTh>Дата</AdminTh>
+            <AdminTh>Клієнт</AdminTh>
+            <AdminTh>Сума</AdminTh>
+            <AdminTh>Статус</AdminTh>
+            <AdminTh>Оплата</AdminTh>
+            <AdminTh>Доставка</AdminTh>
+          </tr>
+        </AdminTableHead>
+        <tbody>
+          {orders.map((order) => (
+            <tr key={order.id} className="border-b border-border last:border-0 hover:bg-surface-muted/40">
+              <AdminTd>
+                <Link href={`/admin/orders/${order.id}`} className="font-semibold text-primary">
+                  {order.orderNumber}
+                </Link>
+              </AdminTd>
+              <AdminTd className="whitespace-nowrap text-muted-foreground">
+                {order.createdAt.toLocaleString("uk-UA", {
+                  day: "2-digit",
+                  month: "short",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </AdminTd>
+              <AdminTd>
+                <p className="font-medium">
+                  {order.customerFirstName} {order.customerLastName}
+                </p>
+                <p className="text-xs text-muted-foreground">{order.customerEmail}</p>
+              </AdminTd>
+              <AdminTd className="tabular-nums font-medium">
+                {formatMoney(order.totalAmount)}
+              </AdminTd>
+              <AdminTd>
+                <AdminStatusBadge tone={orderStatusTone(order.status)}>
+                  {statusLabel(order.status)}
+                </AdminStatusBadge>
+              </AdminTd>
+              <AdminTd>
+                <AdminStatusBadge tone={paymentStatusTone(order.paymentStatus)}>
+                  {paymentStatusLabel(order.paymentStatus)}
+                </AdminStatusBadge>
+              </AdminTd>
+              <AdminTd className="text-xs text-muted-foreground">{order.fulfillmentStatus}</AdminTd>
+            </tr>
+          ))}
+          {orders.length === 0 ? (
+            <AdminEmptyRow colSpan={7}>Замовлень не знайдено</AdminEmptyRow>
+          ) : null}
+        </tbody>
+      </AdminTable>
     </div>
   );
 }

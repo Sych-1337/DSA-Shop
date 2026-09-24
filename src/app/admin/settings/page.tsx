@@ -1,3 +1,4 @@
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { requirePermission } from "@/lib/auth/rbac";
 
 export default async function AdminSettingsPage() {
@@ -19,13 +20,11 @@ export default async function AdminSettingsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
-      <div>
-        <h1 className="text-display text-3xl font-semibold">Налаштування</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Секрети зберігаються лише в env Render. Тут — статус soft-launch конфігурації.
-        </p>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-5">
+      <AdminPageHeader
+        title="Налаштування"
+        description="Секрети лише в env Render. Тут — статус soft-launch конфігурації."
+      />
 
       <section className="rounded-2xl border border-border bg-surface p-5">
         <h2 className="text-lg font-semibold">Сайт</h2>

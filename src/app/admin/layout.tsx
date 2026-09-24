@@ -1,11 +1,12 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 
 import { AdminMobileNav } from "@/components/admin/admin-mobile-nav";
+import { AdminSidebarNav } from "@/components/admin/admin-sidebar-nav";
 import { AdminSignOut } from "@/components/admin/admin-sign-out";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { ADMIN_NAV_GROUPS } from "@/lib/admin/nav";
 import {
   ADMIN_NAV_PERMISSION,
   requireStaff,
@@ -19,29 +20,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const NAV = [
-  { href: "/admin", label: "Dashboard" },
-  { href: "/admin/sales", label: "Sales" },
-  { href: "/admin/orders", label: "Замовлення" },
-  { href: "/admin/returns", label: "Повернення" },
-  { href: "/admin/payments", label: "Платежі" },
-  { href: "/admin/emails", label: "Листи" },
-  { href: "/admin/notifications", label: "Сповіщення" },
-  { href: "/admin/shipments", label: "Доставка" },
-  { href: "/admin/customers", label: "Клієнти" },
-  { href: "/admin/products", label: "Товари" },
-  { href: "/admin/reviews", label: "Відгуки" },
-  { href: "/admin/back-in-stock", label: "Наявність" },
-  { href: "/admin/coupons", label: "Промокоди" },
-  { href: "/admin/inventory", label: "Склад" },
-  { href: "/admin/content", label: "Контент" },
-  { href: "/admin/seo", label: "SEO" },
-  { href: "/admin/analytics", label: "Analytics" },
-  { href: "/admin/commissions", label: "Комісія" },
-  { href: "/admin/staff", label: "Команда" },
-  { href: "/admin/settings", label: "Налаштування" },
-];
-
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = (await headers()).get("x-pathname") ?? "";
   const isPublicAdminSurface =
@@ -53,60 +31,42 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const staff = await requireStaff(pathname || "/admin");
 
-  const visibleNav = NAV.filter((item) => {
-    const permission = ADMIN_NAV_PERMISSION[item.href];
-    return permission == null || staffHasPermission(staff, permission);
-  });
+  const visibleGroups = ADMIN_NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => {
+      const permission = ADMIN_NAV_PERMISSION[item.href];
+      return permission == null || staffHasPermission(staff, permission);
+    }),
+  })).filter((group) => group.items.length > 0);
 
   const staffLabel = `${staff.name} · ${staff.roleKeys.slice(0, 2).join(", ") || "staff"}`;
 
   return (
     <NextIntlClientProvider locale={defaultLocale} messages={messages}>
       <div className="flex min-h-dvh bg-background">
-        <aside className="hidden w-60 shrink-0 border-r border-border bg-chrome text-chrome-foreground md:flex md:flex-col">
-          <div className="border-b border-white/10 px-4 py-5">
-            <p className="text-display text-lg font-semibold">D&A Admin</p>
-            <p className="text-xs text-chrome-foreground/55">{staffLabel}</p>
+        <aside className="hidden w-56 shrink-0 border-r border-border bg-chrome text-chrome-foreground lg:flex lg:flex-col xl:w-60">
+          <div className="border-b border-white/10 px-4 py-4">
+            <p className="text-display text-base font-semibold">D&A Admin</p>
+            <p className="mt-0.5 truncate text-[11px] text-chrome-foreground/55">{staffLabel}</p>
           </div>
-          <nav className="flex flex-1 flex-col gap-1 p-3" aria-label="Admin">
-            {visibleNav.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-chrome-foreground/80 hover:bg-white/10 hover:text-primary"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          <AdminSidebarNav groups={visibleGroups} />
           <div className="space-y-2 border-t border-white/10 p-3">
             <ThemeToggle />
             <AdminSignOut />
           </div>
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-border bg-surface px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:hidden">
-            <div className="flex min-w-0 items-center gap-3">
-              <AdminMobileNav items={visibleNav} staffLabel={staffLabel} />
-              <p className="truncate font-semibold">Admin</p>
+          <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-border bg-surface/95 px-4 py-2.5 backdrop-blur pt-[max(0.65rem,env(safe-area-inset-top))] lg:hidden">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <AdminMobileNav groups={visibleGroups} staffLabel={staffLabel} />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">Admin</p>
+                <p className="truncate text-[11px] text-muted-foreground">{staffLabel}</p>
+              </div>
             </div>
             <ThemeToggle className="text-foreground hover:bg-surface-muted" />
           </header>
-          <nav
-            className="flex gap-2 overflow-x-auto border-b border-border bg-surface px-4 py-2 md:hidden"
-            aria-label="Швидка навігація"
-          >
-            {visibleNav.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="shrink-0 rounded-full border border-border px-3 py-1.5 text-xs font-medium whitespace-nowrap hover:border-primary hover:text-primary"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-          <main id="main" className="flex-1 p-4 md:p-8">
+          <main id="main" className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-5 md:px-6 md:py-6 lg:px-8">
             {children}
           </main>
         </div>

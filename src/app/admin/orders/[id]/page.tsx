@@ -12,8 +12,9 @@ import {
 import { getAdminOrder } from "@/features/orders/admin-service";
 import { ORDER_TRANSITIONS } from "@/features/orders/state-machine";
 import { PaymentStatus } from "@/generated/prisma";
-import { formatMoney } from "@/lib/money";
 import { requirePermission, staffHasPermission } from "@/lib/auth/rbac";
+import { CUSTOMER_REPORTED_PAID_MARKER } from "@/lib/commerce/fop";
+import { formatMoney } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
@@ -101,6 +102,11 @@ export default async function AdminOrderDetailPage({
                 · {order.paymentStatus}
               </dd>
             </div>
+            {order.notes.some((n) => n.body.includes(CUSTOMER_REPORTED_PAID_MARKER)) ? (
+              <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-200">
+                Клієнт натиснув «Оплату здійснив» — перевірте надходження і підтвердіть оплату.
+              </div>
+            ) : null}
             {order.customerNote ? (
               <div className="border-t border-border pt-2">
                 <dt className="text-muted-foreground">Коментар покупця</dt>

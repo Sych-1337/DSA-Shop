@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { Button } from "@/components/ui/button";
 import {
   ensureDraftPeriodAction,
   lockPeriodAction,
@@ -14,23 +16,18 @@ export default async function AdminCommissionsPage() {
   const { agreement, periods, cumulativePayout, currentRateBps } = await getCommissionDashboard();
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-display text-3xl font-semibold">Комісія розробника</h1>
-          <p className="mt-2 text-muted-foreground">
-            7% → 4% після року або досягнення payoff; місячні settlement-и з lock.
-          </p>
-        </div>
-        <form action={ensureDraftPeriodAction}>
-          <button
-            type="submit"
-            className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold"
-          >
-            Створити / відкрити поточний період
-          </button>
-        </form>
-      </div>
+    <div className="space-y-5">
+      <AdminPageHeader
+        title="Комісія"
+        description="7% → 4% після року або payoff; місячні settlement-и з lock."
+        actions={
+          <form action={ensureDraftPeriodAction}>
+            <Button type="submit" variant="secondary" size="sm">
+              Відкрити період
+            </Button>
+          </form>
+        }
+      />
 
       {!agreement ? (
         <p className="text-muted-foreground">Немає активної угоди. Запустіть seed.</p>

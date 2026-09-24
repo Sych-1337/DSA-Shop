@@ -2,20 +2,23 @@
 
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { AdminSignOut } from "@/components/admin/admin-sign-out";
-
-type NavItem = { href: string; label: string };
+import type { AdminNavGroup } from "@/lib/admin/nav";
+import { isAdminNavActive } from "@/lib/admin/nav";
+import { cn } from "@/lib/utils";
 
 export function AdminMobileNav({
-  items,
+  groups,
   staffLabel,
 }: {
-  items: NavItem[];
+  groups: AdminNavGroup[];
   staffLabel: string;
 }) {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname() || "/admin";
 
   useEffect(() => {
     if (!open) return;
@@ -31,11 +34,15 @@ export function AdminMobileNav({
     };
   }, [open]);
 
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
   return (
     <div className="md:hidden">
       <button
         type="button"
-        className="inline-flex size-11 items-center justify-center rounded-xl border border-border bg-surface-muted text-foreground"
+        className="inline-flex size-10 items-center justify-center rounded-lg border border-border bg-surface-muted text-foreground"
         aria-expanded={open}
         aria-label="Меню адмінки"
         onClick={() => setOpen(true)}
@@ -51,7 +58,7 @@ export function AdminMobileNav({
             aria-label="Закрити меню"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute inset-y-0 left-0 flex w-[min(100%,18rem)] flex-col bg-chrome text-chrome-foreground shadow-xl">
+          <div className="absolute inset-y-0 left-0 flex w-[min(100%,19rem)] flex-col bg-chrome text-chrome-foreground shadow-xl">
             <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
               <div>
                 <p className="text-display text-lg font-semibold">D&A Admin</p>
@@ -66,16 +73,33 @@ export function AdminMobileNav({
                 <X className="size-5" />
               </button>
             </div>
-            <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3" aria-label="Admin">
-              {items.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="rounded-lg px-3 py-3 text-sm font-medium text-chrome-foreground/85 hover:bg-white/10 hover:text-primary"
-                  onClick={() => setOpen(false)}
-                >
-                  {item.label}
-                </Link>
+            <nav className="flex flex-1 flex-col gap-4 overflow-y-auto p-3" aria-label="Admin">
+              {groups.map((group) => (
+                <div key={group.id}>
+                  <p className="mb-1.5 px-3 text-[10px] font-semibold tracking-[0.14em] text-chrome-foreground/40 uppercase">
+                    {group.label}
+                  </p>
+                  <div className="flex flex-col gap-0.5">
+                    {group.items.map((item) => {
+                      const active = isAdminNavActive(pathname, item.href);
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={cn(
+                            "rounded-lg px-3 py-2 text-sm font-medium transition",
+                            active
+                              ? "bg-primary/15 text-primary"
+                              : "text-chrome-foreground/85 hover:bg-white/10 hover:text-primary",
+                          )}
+                          onClick={() => setOpen(false)}
+                        >
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
               ))}
             </nav>
             <div className="border-t border-white/10 p-3">

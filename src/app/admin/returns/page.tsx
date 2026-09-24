@@ -1,10 +1,9 @@
-import Link from "next/link";
-
+import { AdminFilterBar } from "@/components/admin/admin-filter-bar";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { ReturnsPanel, type AdminReturnRow } from "@/components/admin/returns-panel";
 import { ReturnRequestStatus } from "@/generated/prisma";
 import { listAdminReturnRequests } from "@/features/returns/service";
 import { getStaffContext, requirePermission, staffHasPermission } from "@/lib/auth/rbac";
-import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -55,37 +54,20 @@ export default async function AdminReturnsPage({
   const canWrite = staff ? staffHasPermission(staff, "orders.write") : false;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-display text-3xl font-semibold">Повернення</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Заявки покупців «товар не підійшов». Схвалення → отримання → повернення коштів. За
-          потреби товар повертається на склад.
-        </p>
-        <p className="mt-1 text-sm text-muted-foreground">Заявок: {total}</p>
-      </div>
+    <div className="space-y-5">
+      <AdminPageHeader
+        title="Повернення"
+        description="Схвалення → отримання → повернення коштів. За потреби — повернення на склад."
+        meta={`Заявок: ${total}`}
+      />
 
-      <div className="flex flex-wrap gap-2">
-        {FILTERS.map((filter) => {
-          const active = (params.status ?? "all") === filter.key;
-          const href =
-            filter.key === "all" ? "/admin/returns" : `/admin/returns?status=${filter.key}`;
-          return (
-            <Link
-              key={filter.key}
-              href={href}
-              className={cn(
-                "rounded-full border px-3 py-1.5 text-xs font-semibold",
-                active
-                  ? "border-primary bg-primary text-white"
-                  : "border-border bg-surface text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {filter.label}
-            </Link>
-          );
-        })}
-      </div>
+      <AdminFilterBar
+        chips={FILTERS.map((filter) => ({
+          href: filter.key === "all" ? "/admin/returns" : `/admin/returns?status=${filter.key}`,
+          label: filter.label,
+          active: (params.status ?? "all") === filter.key,
+        }))}
+      />
 
       <ReturnsPanel rows={rows} canWrite={canWrite} />
     </div>

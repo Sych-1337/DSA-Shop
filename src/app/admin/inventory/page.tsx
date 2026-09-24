@@ -1,6 +1,13 @@
 import Link from "next/link";
 
+import {
+  AdminFilterBar,
+  adminFilterInputClassName,
+  adminFilterSelectClassName,
+} from "@/components/admin/admin-filter-bar";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { InventoryTable } from "@/components/admin/inventory-table";
+import { Button } from "@/components/ui/button";
 import { listInventoryRows, listWarehouses } from "@/features/inventory/service";
 import { getStaffContext, requirePermission, staffHasPermission } from "@/lib/auth/rbac";
 import { cn } from "@/lib/utils";
@@ -51,35 +58,52 @@ export default async function AdminInventoryPage({
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-display text-3xl font-semibold">Склад</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Універсальний облік усіх активних SKU. Зміни залишків — тільки через рухи. Продажі
-          автоматично резервують і списують товар.
-        </p>
-      </div>
+    <div className="space-y-5">
+      <AdminPageHeader
+        title="Склад"
+        description="Універсальний облік SKU. Зміни залишків — лише через рухи."
+        meta={
+          <>
+            SKU: <span className="font-semibold text-foreground">{total}</span>
+            {warehouse ? (
+              <>
+                {" "}
+                · <span className="font-semibold text-foreground">{warehouse.name}</span>
+              </>
+            ) : null}
+          </>
+        }
+      />
 
-      <form
-        method="get"
-        action="/admin/inventory"
-        className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-3 sm:flex-row sm:flex-wrap sm:items-end sm:p-4"
+      <AdminFilterBar
+        chips={[
+          {
+            href: hrefFor({ lowStock: false, page: 1 }),
+            label: "Усі SKU",
+            active: !lowStockOnly,
+          },
+          {
+            href: hrefFor({ lowStock: true, page: 1 }),
+            label: "Низький залишок",
+            active: lowStockOnly,
+          },
+        ]}
       >
-        <label className="block min-w-[200px] flex-1 space-y-1 text-xs">
-          <span className="text-muted-foreground">Пошук (SKU / назва)</span>
+        <form
+          method="get"
+          action="/admin/inventory"
+          className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center"
+        >
           <input
             name="q"
             defaultValue={q ?? ""}
-            placeholder="hoodie, APP-…"
-            className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary"
+            placeholder="SKU / назва…"
+            className={adminFilterInputClassName("flex-1")}
           />
-        </label>
-        <label className="block min-w-[160px] space-y-1 text-xs">
-          <span className="text-muted-foreground">Склад</span>
           <select
             name="warehouseId"
             defaultValue={warehouseId ?? warehouse?.id ?? ""}
-            className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary"
+            className={adminFilterSelectClassName("min-w-[10rem]")}
           >
             {warehouses.map((wh) => (
               <option key={wh.id} value={wh.id}>
@@ -88,64 +112,45 @@ export default async function AdminInventoryPage({
               </option>
             ))}
           </select>
-        </label>
-        <label className="inline-flex h-10 items-center gap-2 rounded-xl border border-border px-3 text-xs">
-          <input type="checkbox" name="lowStock" value="1" defaultChecked={lowStockOnly} />
-          Лише низький залишок
-        </label>
-        <button
-          type="submit"
-          className="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-5 text-sm font-semibold text-white"
-        >
-          Застосувати
-        </button>
-        {(q || lowStockOnly || page > 1) && (
-          <Link
-            href="/admin/inventory"
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-border px-4 text-sm"
-          >
-            Скинути
-          </Link>
-        )}
-      </form>
-
-      <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
-        <p>
-          Знайдено SKU: <span className="font-semibold text-foreground">{total}</span>
-          {warehouse ? (
-            <>
-              {" "}
-              · склад <span className="font-semibold text-foreground">{warehouse.name}</span>
-            </>
+          {lowStockOnly ? <input type="hidden" name="lowStock" value="1" /> : null}
+          <Button type="submit" size="sm">
+            Застосувати
+          </Button>
+          {q || lowStockOnly || page > 1 ? (
+            <Button href="/admin/inventory" variant="outline" size="sm">
+              Скинути
+            </Button>
           ) : null}
-        </p>
-        <p>
-          Сторінка {page} / {totalPages}
-        </p>
-      </div>
+        </form>
+      </AdminFilterBar>
 
       <InventoryTable rows={rows} canAdjust={canAdjust} canSeeCost={canSeeCost} />
 
       {totalPages > 1 ? (
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href={hrefFor({ page: Math.max(1, page - 1) })}
-            className={cn(
-              "rounded-xl border border-border px-4 py-2 text-sm",
-              page <= 1 && "pointer-events-none opacity-40",
-            )}
-          >
-            Назад
-          </Link>
-          <Link
-            href={hrefFor({ page: Math.min(totalPages, page + 1) })}
-            className={cn(
-              "rounded-xl border border-border px-4 py-2 text-sm",
-              page >= totalPages && "pointer-events-none opacity-40",
-            )}
-          >
-            Далі
-          </Link>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+          <p className="text-muted-foreground">
+            Сторінка {page} / {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <Link
+              href={hrefFor({ page: Math.max(1, page - 1) })}
+              className={cn(
+                "rounded-lg border border-border px-3 py-1.5 text-sm",
+                page <= 1 && "pointer-events-none opacity-40",
+              )}
+            >
+              Назад
+            </Link>
+            <Link
+              href={hrefFor({ page: Math.min(totalPages, page + 1) })}
+              className={cn(
+                "rounded-lg border border-border px-3 py-1.5 text-sm",
+                page >= totalPages && "pointer-events-none opacity-40",
+              )}
+            >
+              Далі
+            </Link>
+          </div>
         </div>
       ) : null}
     </div>

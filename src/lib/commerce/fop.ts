@@ -7,6 +7,8 @@ export type FopRequisites = {
   qrImageUrl: string;
 };
 
+export const CUSTOMER_REPORTED_PAID_MARKER = "[customer_reported_paid]";
+
 /** Soft-launch defaults — override via FOP_* env on Render without redeploying copy. */
 const DEFAULTS = {
   name: "Семенова Дар'я Миколаївна",

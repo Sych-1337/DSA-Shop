@@ -1,3 +1,4 @@
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { formatMoney } from "@/lib/money";
 import { createCouponAction, toggleCouponAction } from "@/features/coupons/admin-actions";
 import { listCoupons } from "@/features/coupons/service";
@@ -10,13 +11,17 @@ export default async function AdminCouponsPage() {
   const coupons = await listCoupons();
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
-      <div>
-        <h1 className="text-display text-3xl font-semibold">Промокоди</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Застосовуються в кошику / checkout. Seed: <code className="font-mono">WELCOME15</code> (15%).
-        </p>
-      </div>
+    <div className="space-y-5">
+      <AdminPageHeader
+        title="Промокоди"
+        description={
+          <>
+            Застосовуються в кошику / checkout. Seed:{" "}
+            <code className="font-mono">WELCOME15</code> (15%).
+          </>
+        }
+        meta={`Кодів: ${coupons.length}`}
+      />
 
       {canWrite ? (
         <section className="rounded-2xl border border-border bg-surface p-5 shadow-[var(--shadow-card)]">

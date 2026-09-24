@@ -1,3 +1,4 @@
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { requirePermission } from "@/lib/auth/rbac";
 import { getMockEmailInbox } from "@/lib/providers/email/mock";
 
@@ -8,14 +9,12 @@ export default async function AdminEmailsPage() {
   const messages = getMockEmailInbox();
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div>
-        <h1 className="text-display text-3xl font-semibold">Листи (stub inbox)</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Mock SMTP: усі листи, що «відправив» магазин, зʼявляються тут замість реальної пошти.
-          Після підключення SMTP цей розділ замінить лог провайдера.
-        </p>
-      </div>
+    <div className="mx-auto max-w-4xl space-y-5">
+      <AdminPageHeader
+        title="Листи"
+        description="Stub inbox: листи магазину зʼявляються тут замість SMTP. Після підключення провайдера — замінить лог."
+        meta={`Повідомлень: ${messages.length}`}
+      />
 
       {messages.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">

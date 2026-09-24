@@ -1,5 +1,9 @@
 import Link from "next/link";
 
+import { AdminFilterBar } from "@/components/admin/admin-filter-bar";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { AdminStatusBadge } from "@/components/admin/admin-status-badge";
+import { Button } from "@/components/ui/button";
 import { moderateReviewAction } from "@/features/reviews/admin-actions";
 import { listAdminReviews } from "@/features/reviews/service";
 import { ReviewStatus } from "@/generated/prisma";
@@ -19,45 +23,39 @@ export default async function AdminReviewsPage({
       : undefined;
   const reviews = await listAdminReviews(status);
 
+  const chips = [
+    { href: "/admin/reviews", label: "Усі", key: "all" },
+    { href: "/admin/reviews?status=PENDING", label: "Очікують", key: "PENDING" },
+    { href: "/admin/reviews?status=APPROVED", label: "Схвалені", key: "APPROVED" },
+    { href: "/admin/reviews?status=REJECTED", label: "Відхилені", key: "REJECTED" },
+  ].map((tab) => ({
+    ...tab,
+    active: (status ?? "all") === tab.key,
+  }));
+
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
-      <div>
-        <h1 className="text-display text-3xl font-semibold">Відгуки</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Нові відгуки з PDP потрапляють у PENDING. Після approve оновлюється рейтинг товару.
-        </p>
-      </div>
+    <div className="space-y-5">
+      <AdminPageHeader
+        title="Відгуки"
+        description="Нові відгуки з PDP у PENDING. Після approve оновлюється рейтинг товару."
+        meta={`Знайдено: ${reviews.length}`}
+      />
 
-      <div className="flex flex-wrap gap-2 text-sm">
-        {[
-          { href: "/admin/reviews", label: "Усі" },
-          { href: "/admin/reviews?status=PENDING", label: "Очікують" },
-          { href: "/admin/reviews?status=APPROVED", label: "Схвалені" },
-          { href: "/admin/reviews?status=REJECTED", label: "Відхилені" },
-        ].map((tab) => (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            className="rounded-full border border-border px-3 py-1.5 hover:border-primary hover:text-primary"
-          >
-            {tab.label}
-          </Link>
-        ))}
-      </div>
+      <AdminFilterBar chips={chips} />
 
-      <ul className="space-y-4">
+      <ul className="space-y-3">
         {reviews.length === 0 ? (
-          <li className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+          <li className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
             Відгуків немає.
           </li>
         ) : (
           reviews.map((review) => (
             <li
               key={review.id}
-              className="rounded-2xl border border-border bg-surface p-5 shadow-[var(--shadow-card)]"
+              className="rounded-xl border border-border bg-surface p-4 shadow-[var(--shadow-card)] sm:p-5"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
+                <div className="min-w-0">
                   <p className="font-semibold">
                     {review.rating}/5 ·{" "}
                     <Link
@@ -75,9 +73,21 @@ export default async function AdminReviewsPage({
                   {review.title ? <p className="mt-3 font-medium">{review.title}</p> : null}
                   <p className="mt-2 text-sm leading-relaxed">{review.body}</p>
                 </div>
-                <span className="rounded-full border border-border px-2 py-0.5 text-xs">
-                  {review.status}
-                </span>
+                <AdminStatusBadge
+                  tone={
+                    review.status === "APPROVED"
+                      ? "success"
+                      : review.status === "REJECTED"
+                        ? "danger"
+                        : "warning"
+                  }
+                >
+                  {review.status === "PENDING"
+                    ? "Очікує"
+                    : review.status === "APPROVED"
+                      ? "Схвалено"
+                      : "Відхилено"}
+                </AdminStatusBadge>
               </div>
 
               {canWrite && review.status === "PENDING" ? (
@@ -85,22 +95,16 @@ export default async function AdminReviewsPage({
                   <form action={moderateReviewAction}>
                     <input type="hidden" name="reviewId" value={review.id} />
                     <input type="hidden" name="status" value="APPROVED" />
-                    <button
-                      type="submit"
-                      className="h-9 rounded-xl bg-primary px-3 text-sm font-semibold text-white"
-                    >
+                    <Button type="submit" size="sm">
                       Схвалити
-                    </button>
+                    </Button>
                   </form>
                   <form action={moderateReviewAction}>
                     <input type="hidden" name="reviewId" value={review.id} />
                     <input type="hidden" name="status" value="REJECTED" />
-                    <button
-                      type="submit"
-                      className="h-9 rounded-xl border border-border px-3 text-sm font-semibold"
-                    >
+                    <Button type="submit" variant="secondary" size="sm">
                       Відхилити
-                    </button>
+                    </Button>
                   </form>
                 </div>
               ) : null}

@@ -1,3 +1,5 @@
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { Button } from "@/components/ui/button";
 import { SalesBoard, type SalesOrderCard } from "@/components/admin/sales-board";
 import { listOrdersForKanban } from "@/features/orders/admin-service";
 import { requirePermission } from "@/lib/auth/rbac";
@@ -36,14 +38,17 @@ export default async function AdminSalesKanbanPage() {
   }));
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-display text-3xl font-semibold">Sales center</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Черги за статусами без довгої каруселі: спочатку оберіть групу, потім статус. На картці —
-          контакти, доставка, товари й коментар покупця. Оплата — лише повна передоплата.
-        </p>
-      </div>
+    <div className="space-y-5">
+      <AdminPageHeader
+        title="Sales"
+        description="Черги за статусами: група → статус → картка з контактами, доставкою й товарами."
+        meta={`У черзі: ${cards.length}`}
+        actions={
+          <Button href="/admin/orders" variant="secondary" size="sm">
+            Список
+          </Button>
+        }
+      />
 
       <SalesBoard orders={cards} />
     </div>

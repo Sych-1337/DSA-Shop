@@ -7,7 +7,7 @@ import { MockPaymentPanel } from "@/components/store/mock-payment-panel";
 import { getOrderByNumber } from "@/features/checkout/service";
 import { PaymentMethod, PaymentStatus } from "@/generated/prisma";
 import { Link } from "@/i18n/navigation";
-import { getFopRequisites } from "@/lib/commerce/fop";
+import { CUSTOMER_REPORTED_PAID_MARKER, getFopRequisites } from "@/lib/commerce/fop";
 import { formatMoney } from "@/lib/money";
 import { isMockPaymentAllowed } from "@/lib/security/mock-payments";
 import { verifyOrderAccessToken } from "@/lib/security/order-access";
@@ -49,16 +49,19 @@ export default async function CheckoutPayPage({
     order.payments.some((p) => p.provider === "bank_transfer");
   const fop = getFopRequisites(order.orderNumber);
   const showMock = isMockPaymentAllowed() && !isBank;
+  const alreadyReportedPaid = order.notes.some((note) =>
+    note.body.includes(CUSTOMER_REPORTED_PAID_MARKER),
+  );
 
   return (
-    <main className="mx-auto max-w-lg px-4 py-10 sm:py-12">
+    <main className="mx-auto max-w-5xl px-4 py-10 sm:py-12">
       <p className="text-sm font-semibold tracking-wide text-primary uppercase">
         {t("payStepLabel")}
       </p>
       <h1 className="text-display mt-2 text-3xl font-semibold sm:text-4xl">{t("payTitle")}</h1>
       <p className="mt-3 text-muted-foreground">{t("payLead")}</p>
 
-      <ul className="mt-6 space-y-2 rounded-2xl border border-border bg-surface p-4 text-sm shadow-[var(--shadow-card)]">
+      <ul className="mt-6 max-w-xl space-y-2 rounded-2xl border border-border bg-surface p-4 text-sm shadow-[var(--shadow-card)]">
         {order.items.map((item) => (
           <li key={item.id} className="flex justify-between gap-3">
             <span className="min-w-0 truncate">
@@ -78,21 +81,25 @@ export default async function CheckoutPayPage({
           orderNumber={order.orderNumber}
           totalAmount={order.totalAmount}
           fop={fop}
+          accessToken={token}
+          alreadyReportedPaid={alreadyReportedPaid}
         />
       ) : null}
 
       {showMock ? (
-        <MockPaymentPanel
-          orderNumber={order.orderNumber}
-          totalAmount={order.totalAmount}
-          customerEmail={order.customerEmail}
-          alreadyFailed={alreadyFailed}
-          accessToken={token}
-        />
+        <div className="max-w-lg">
+          <MockPaymentPanel
+            orderNumber={order.orderNumber}
+            totalAmount={order.totalAmount}
+            customerEmail={order.customerEmail}
+            alreadyFailed={alreadyFailed}
+            accessToken={token}
+          />
+        </div>
       ) : null}
 
       {!isBank && !showMock ? (
-        <p className="mt-6 rounded-2xl border border-border bg-surface p-4 text-sm text-muted-foreground">
+        <p className="mt-6 max-w-lg rounded-2xl border border-border bg-surface p-4 text-sm text-muted-foreground">
           {t("payOnlinePending")}
         </p>
       ) : null}

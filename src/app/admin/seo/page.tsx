@@ -4,6 +4,7 @@ import {
   toggleRedirectAction,
 } from "@/features/content/actions";
 import { listRedirects, listSeoMeta } from "@/features/seo/service";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { requirePermission } from "@/lib/auth/rbac";
 
 export default async function AdminSeoPage() {
@@ -11,13 +12,11 @@ export default async function AdminSeoPage() {
   const [metas, redirects] = await Promise.all([listSeoMeta(), listRedirects()]);
 
   return (
-    <div className="space-y-12">
-      <div>
-        <h1 className="text-display text-3xl font-semibold">SEO</h1>
-        <p className="mt-2 text-muted-foreground">
-          Метадані сутностей та редіректи slug / старих URL.
-        </p>
-      </div>
+    <div className="space-y-8">
+      <AdminPageHeader
+        title="SEO"
+        description="Метадані сутностей та редіректи slug / старих URL."
+      />
 
       <section className="space-y-4">
         <h2 className="text-display text-2xl font-semibold">SeoMeta</h2>

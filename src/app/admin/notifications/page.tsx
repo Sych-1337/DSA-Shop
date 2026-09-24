@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { listAdminNotifications } from "@/features/customers/admin-service";
 import { requirePermission } from "@/lib/auth/rbac";
 
@@ -14,13 +15,12 @@ export default async function AdminNotificationsPage() {
   const items = await listAdminNotifications();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
-      <div>
-        <h1 className="text-display text-3xl font-semibold">Сповіщення</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Живий stub: нові замовлення, fail-оплати й відкриті повернення. Без окремої inbox-таблиці.
-        </p>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-5">
+      <AdminPageHeader
+        title="Сповіщення"
+        description="Живий stub: нові замовлення, fail-оплати й відкриті повернення."
+        meta={`Подій: ${items.length}`}
+      />
 
       {items.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">

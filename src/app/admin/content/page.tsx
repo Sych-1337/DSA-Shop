@@ -4,6 +4,7 @@ import {
 } from "@/features/content/actions";
 import { listAllBlogPosts, listHomepageBlocks } from "@/features/content/service";
 import { ContentStatus } from "@/generated/prisma";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { requirePermission } from "@/lib/auth/rbac";
 
 export default async function AdminContentPage() {
@@ -11,13 +12,11 @@ export default async function AdminContentPage() {
   const [blocks, posts] = await Promise.all([listHomepageBlocks(), listAllBlogPosts()]);
 
   return (
-    <div className="space-y-12">
-      <div>
-        <h1 className="text-display text-3xl font-semibold">Контент</h1>
-        <p className="mt-2 text-muted-foreground">
-          Блоки головної та статті блогу. Зміни одразу впливають на вітрину.
-        </p>
-      </div>
+    <div className="space-y-8">
+      <AdminPageHeader
+        title="Контент"
+        description="Блоки головної та статті блогу. Зміни одразу на вітрині."
+      />
 
       <section className="space-y-4">
         <h2 className="text-display text-2xl font-semibold">Головна — блоки</h2>

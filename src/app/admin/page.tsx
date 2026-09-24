@@ -1,9 +1,25 @@
 import Link from "next/link";
 
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { AdminStatusBadge } from "@/components/admin/admin-status-badge";
+import {
+  AdminEmptyRow,
+  AdminTable,
+  AdminTableHead,
+  AdminTd,
+  AdminTh,
+} from "@/components/admin/admin-table";
 import { Button } from "@/components/ui/button";
 import { getDashboardMetrics } from "@/features/orders/admin-service";
-import { formatMoney } from "@/lib/money";
+import {
+  orderStatusLabel,
+  orderStatusTone,
+  paymentStatusLabel,
+  paymentStatusTone,
+} from "@/lib/admin/labels";
 import { requirePermission } from "@/lib/auth/rbac";
+import { formatMoney } from "@/lib/money";
+import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -18,11 +34,15 @@ export default async function AdminDashboardPage() {
       value: formatMoney(metrics.revenuePaid),
       href: "/admin/payments",
     },
-    { label: "Оплачено сьогодні", value: String(metrics.paidToday), href: "/admin/orders?paymentStatus=PAID" },
     {
-      label: "Low stock",
+      label: "Оплачено сьогодні",
+      value: String(metrics.paidToday),
+      href: "/admin/orders?paymentStatus=PAID",
+    },
+    {
+      label: "Низький залишок",
       value: String(metrics.queues.lowStock),
-      href: "/admin/inventory",
+      href: "/admin/inventory?lowStock=1",
     },
   ];
 
@@ -32,6 +52,7 @@ export default async function AdminDashboardPage() {
       label: "На підтвердженні",
       count: metrics.queues.awaitingConfirmation,
       href: "/admin/orders?status=AWAITING_CONFIRMATION",
+      highlight: true,
     },
     { label: "Збірка", count: metrics.queues.picking, href: "/admin/orders?status=PICKING" },
     {
@@ -40,104 +61,130 @@ export default async function AdminDashboardPage() {
       href: "/admin/orders?status=READY_TO_SHIP",
     },
     {
-      label: "Failed payments",
+      label: "Помилки оплати",
       count: metrics.queues.failedPayments,
       href: "/admin/orders?paymentStatus=FAILED",
+      danger: true,
     },
   ];
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-display text-2xl font-semibold sm:text-3xl">Dashboard</h1>
-          <p className="mt-1 text-sm text-muted-foreground sm:mt-2 sm:text-base">
-            Операційна панель продажів D&A
-          </p>
-        </div>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-          <Button href="/admin/sales" variant="secondary" size="sm" className="w-full sm:w-auto">
-            Sales kanban
-          </Button>
-          <Button href="/admin/products/new" size="sm" className="w-full sm:w-auto">
-            Додати товар
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <AdminPageHeader
+        title="Огляд"
+        description="Операційна панель продажів D&A"
+        actions={
+          <>
+            <Button href="/admin/sales" variant="secondary" size="sm">
+              Sales
+            </Button>
+            <Button href="/admin/products/new" size="sm">
+              Додати товар
+            </Button>
+          </>
+        }
+      />
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {cards.map((card) => (
           <Link
             key={card.label}
             href={card.href}
-            className="rounded-2xl border border-border bg-surface p-4 shadow-[var(--shadow-card)] transition hover:border-primary sm:p-5"
+            className="rounded-xl border border-border bg-surface p-3.5 shadow-[var(--shadow-card)] transition hover:border-primary/60 sm:p-4"
           >
-            <p className="text-xs text-muted-foreground sm:text-sm">{card.label}</p>
-            <p className="text-display mt-1 text-xl font-semibold sm:mt-2 sm:text-2xl">{card.value}</p>
+            <p className="text-xs text-muted-foreground">{card.label}</p>
+            <p className="text-display mt-1 text-xl font-semibold sm:text-2xl">{card.value}</p>
           </Link>
         ))}
       </div>
 
-      <section>
-        <h2 className="text-display mb-3 text-xl font-semibold">Черги дій</h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+            Черги
+          </h2>
+          <Link href="/admin/orders" className="text-xs font-semibold text-primary">
+            Усі замовлення →
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
           {queues.map((queue) => (
             <Link
               key={queue.label}
               href={queue.href}
-              className="rounded-xl border border-border bg-surface px-4 py-3 hover:border-primary"
+              className={cn(
+                "rounded-xl border bg-surface px-3 py-3 transition hover:border-primary/60",
+                queue.danger
+                  ? "border-red-500/30"
+                  : queue.highlight
+                    ? "border-amber-500/35"
+                    : "border-border",
+              )}
             >
-              <p className="text-sm text-muted-foreground">{queue.label}</p>
-              <p className="text-2xl font-bold text-primary">{queue.count}</p>
+              <p className="text-xs text-muted-foreground">{queue.label}</p>
+              <p
+                className={cn(
+                  "mt-1 text-2xl font-bold tabular-nums",
+                  queue.danger ? "text-red-600 dark:text-red-400" : "text-primary",
+                )}
+              >
+                {queue.count}
+              </p>
             </Link>
           ))}
         </div>
       </section>
 
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-display text-xl font-semibold">Останні замовлення</h2>
-          <Link href="/admin/orders" className="text-primary text-sm font-semibold">
-            Усі →
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+            Останні замовлення
+          </h2>
+          <Link href="/admin/sales" className="text-xs font-semibold text-primary">
+            Sales →
           </Link>
         </div>
-        <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
-          <table className="w-full min-w-[640px] text-left text-sm">
-            <thead className="border-b border-border bg-surface-muted text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 font-medium">Номер</th>
-                <th className="px-4 py-3 font-medium">Клієнт</th>
-                <th className="px-4 py-3 font-medium">Сума</th>
-                <th className="px-4 py-3 font-medium">Статус</th>
-                <th className="px-4 py-3 font-medium">Оплата</th>
+        <AdminTable minWidth="640px">
+          <AdminTableHead>
+            <tr>
+              <AdminTh>Номер</AdminTh>
+              <AdminTh>Клієнт</AdminTh>
+              <AdminTh>Сума</AdminTh>
+              <AdminTh>Статус</AdminTh>
+              <AdminTh>Оплата</AdminTh>
+            </tr>
+          </AdminTableHead>
+          <tbody>
+            {metrics.recentOrders.map((order) => (
+              <tr key={order.id} className="border-b border-border last:border-0 hover:bg-surface-muted/40">
+                <AdminTd>
+                  <Link href={`/admin/orders/${order.id}`} className="font-semibold text-primary">
+                    {order.orderNumber}
+                  </Link>
+                </AdminTd>
+                <AdminTd>
+                  {order.customerFirstName} {order.customerLastName}
+                </AdminTd>
+                <AdminTd className="tabular-nums">{formatMoney(order.totalAmount)}</AdminTd>
+                <AdminTd>
+                  <AdminStatusBadge tone={orderStatusTone(order.status)}>
+                    {orderStatusLabel(order.status)}
+                  </AdminStatusBadge>
+                </AdminTd>
+                <AdminTd>
+                  <AdminStatusBadge tone={paymentStatusTone(order.paymentStatus)}>
+                    {paymentStatusLabel(order.paymentStatus)}
+                  </AdminStatusBadge>
+                </AdminTd>
               </tr>
-            </thead>
-            <tbody>
-              {metrics.recentOrders.map((order) => (
-                <tr key={order.id} className="border-b border-border last:border-0">
-                  <td className="px-4 py-3">
-                    <Link href={`/admin/orders/${order.id}`} className="font-semibold text-primary">
-                      {order.orderNumber}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">
-                    {order.customerFirstName} {order.customerLastName}
-                  </td>
-                  <td className="px-4 py-3">{formatMoney(order.totalAmount)}</td>
-                  <td className="px-4 py-3">{order.status}</td>
-                  <td className="px-4 py-3">{order.paymentStatus}</td>
-                </tr>
-              ))}
-              {metrics.recentOrders.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                    Поки немає замовлень — оформіть тестовий checkout на storefront.
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
+            ))}
+            {metrics.recentOrders.length === 0 ? (
+              <AdminEmptyRow colSpan={5}>
+                Поки немає замовлень — оформіть тестовий checkout на storefront.
+              </AdminEmptyRow>
+            ) : null}
+          </tbody>
+        </AdminTable>
       </section>
     </div>
   );

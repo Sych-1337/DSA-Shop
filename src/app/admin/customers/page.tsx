@@ -1,8 +1,21 @@
 import Link from "next/link";
 
+import {
+  AdminFilterBar,
+  adminFilterInputClassName,
+} from "@/components/admin/admin-filter-bar";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import {
+  AdminEmptyRow,
+  AdminTable,
+  AdminTableHead,
+  AdminTd,
+  AdminTh,
+} from "@/components/admin/admin-table";
+import { Button } from "@/components/ui/button";
 import { listAdminCustomers } from "@/features/customers/admin-service";
-import { formatMoney } from "@/lib/money";
 import { requirePermission } from "@/lib/auth/rbac";
+import { formatMoney } from "@/lib/money";
 
 export default async function AdminCustomersPage({
   searchParams,
@@ -14,78 +27,74 @@ export default async function AdminCustomersPage({
   const customers = await listAdminCustomers(q);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
-      <div>
-        <h1 className="text-display text-3xl font-semibold">Клієнти</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Профілі кабінету + замовлення за email/телефоном.
-        </p>
-      </div>
+    <div className="space-y-5">
+      <AdminPageHeader
+        title="Клієнти"
+        description="Профілі кабінету + замовлення за email/телефоном."
+        meta={`Знайдено: ${customers.length}`}
+      />
 
-      <form className="flex flex-wrap gap-2">
-        <input
-          name="q"
-          defaultValue={q}
-          placeholder="Email, телефон, імʼя…"
-          className="h-10 min-w-[16rem] flex-1 rounded-xl border border-border bg-background px-3 text-sm"
-        />
-        <button
-          type="submit"
-          className="h-10 rounded-xl bg-primary px-4 text-sm font-semibold text-white"
-        >
-          Знайти
-        </button>
-      </form>
+      <AdminFilterBar>
+        <form method="get" className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+          <input
+            name="q"
+            defaultValue={q}
+            placeholder="Email, телефон, імʼя…"
+            className={adminFilterInputClassName("flex-1")}
+          />
+          <Button type="submit" size="sm">
+            Знайти
+          </Button>
+          {q ? (
+            <Button href="/admin/customers" variant="outline" size="sm">
+              Скинути
+            </Button>
+          ) : null}
+        </form>
+      </AdminFilterBar>
 
-      <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-[var(--shadow-card)]">
-        <table className="min-w-full text-left text-sm">
-          <thead className="border-b border-border text-muted-foreground">
-            <tr>
-              <th className="px-4 py-3 font-medium">Клієнт</th>
-              <th className="px-4 py-3 font-medium">Контакти</th>
-              <th className="px-4 py-3 font-medium">Замовлення</th>
-              <th className="px-4 py-3 font-medium">Сума</th>
-              <th className="px-4 py-3 font-medium">Оновлено</th>
-            </tr>
-          </thead>
-          <tbody>
-            {customers.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-8 text-muted-foreground">
-                  Профілів не знайдено.
-                </td>
+      <AdminTable minWidth="720px">
+        <AdminTableHead>
+          <tr>
+            <AdminTh>Клієнт</AdminTh>
+            <AdminTh>Контакти</AdminTh>
+            <AdminTh>Замовлення</AdminTh>
+            <AdminTh>Сума</AdminTh>
+            <AdminTh>Оновлено</AdminTh>
+          </tr>
+        </AdminTableHead>
+        <tbody>
+          {customers.length === 0 ? (
+            <AdminEmptyRow colSpan={5}>Профілів не знайдено.</AdminEmptyRow>
+          ) : (
+            customers.map((customer) => (
+              <tr key={customer.id} className="border-b border-border/70 last:border-0 hover:bg-surface-muted/40">
+                <AdminTd>
+                  <Link
+                    href={`/admin/customers/${customer.id}`}
+                    className="font-medium text-primary hover:underline"
+                  >
+                    {[customer.firstName, customer.lastName].filter(Boolean).join(" ") ||
+                      "Без імені"}
+                  </Link>
+                  <p className="text-xs text-muted-foreground">
+                    {customer.userId ? "Акаунт" : "Гість"} · адрес {customer._count.addresses}
+                  </p>
+                </AdminTd>
+                <AdminTd>
+                  <p>{customer.contactEmail ?? "—"}</p>
+                  <p className="text-muted-foreground">{customer.phone ?? "—"}</p>
+                </AdminTd>
+                <AdminTd className="tabular-nums">{customer.orderCount}</AdminTd>
+                <AdminTd className="tabular-nums">{formatMoney(customer.totalSpent)}</AdminTd>
+                <AdminTd className="text-muted-foreground">
+                  {customer.updatedAt.toLocaleDateString("uk-UA")}
+                </AdminTd>
               </tr>
-            ) : (
-              customers.map((customer) => (
-                <tr key={customer.id} className="border-b border-border/70 last:border-0">
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/admin/customers/${customer.id}`}
-                      className="font-medium text-primary hover:underline"
-                    >
-                      {[customer.firstName, customer.lastName].filter(Boolean).join(" ") ||
-                        "Без імені"}
-                    </Link>
-                    <p className="text-xs text-muted-foreground">
-                      {customer.userId ? "Акаунт" : "Гість"} · адрес{" "}
-                      {customer._count.addresses}
-                    </p>
-                  </td>
-                  <td className="px-4 py-3">
-                    <p>{customer.contactEmail ?? "—"}</p>
-                    <p className="text-muted-foreground">{customer.phone ?? "—"}</p>
-                  </td>
-                  <td className="px-4 py-3">{customer.orderCount}</td>
-                  <td className="px-4 py-3">{formatMoney(customer.totalSpent)}</td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {customer.updatedAt.toLocaleDateString("uk-UA")}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+            ))
+          )}
+        </tbody>
+      </AdminTable>
     </div>
   );
 }

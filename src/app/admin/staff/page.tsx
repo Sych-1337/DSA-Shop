@@ -1,3 +1,4 @@
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import {
   assignStaffRolesAction,
   createStaffAction,
@@ -11,13 +12,12 @@ export default async function AdminStaffPage() {
   const [staff, roles] = await Promise.all([listStaff(), listRoles()]);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
-      <div>
-        <h1 className="text-display text-3xl font-semibold">Команда</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Облікові записи адмін-панелі, ролі та доступ.
-        </p>
-      </div>
+    <div className="space-y-5">
+      <AdminPageHeader
+        title="Команда"
+        description="Облікові записи адмін-панелі, ролі та доступ."
+        meta={`Співробітників: ${staff.length}`}
+      />
 
       <section className="rounded-2xl border border-border bg-surface p-5 shadow-[var(--shadow-card)]">
         <h2 className="text-lg font-semibold">Новий співробітник</h2>

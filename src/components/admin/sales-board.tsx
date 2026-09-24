@@ -102,15 +102,15 @@ export function SalesBoard({ orders }: { orders: SalesOrderCard[] }) {
               setStatusFilter("ALL");
             }}
             className={cn(
-              "rounded-2xl border px-4 py-3 text-left transition",
+              "rounded-xl border px-3.5 py-2.5 text-left transition",
               group === g.key
                 ? "border-primary bg-primary/10"
                 : "border-border bg-surface hover:border-primary/40",
             )}
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               <span className="text-sm font-semibold">{g.label}</span>
-              <span className="rounded-full bg-background px-2 py-0.5 text-xs tabular-nums">
+              <span className="rounded-md bg-background px-1.5 py-0.5 text-[11px] tabular-nums">
                 {counts.get(g.key) ?? 0}
               </span>
             </div>
@@ -124,7 +124,7 @@ export function SalesBoard({ orders }: { orders: SalesOrderCard[] }) {
           type="button"
           onClick={() => setStatusFilter("ALL")}
           className={cn(
-            "shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold",
+            "shrink-0 rounded-lg border px-2.5 py-1.5 text-xs font-semibold",
             statusFilter === "ALL"
               ? "border-primary bg-primary text-white"
               : "border-border bg-surface text-muted-foreground hover:text-foreground",
@@ -138,7 +138,7 @@ export function SalesBoard({ orders }: { orders: SalesOrderCard[] }) {
             type="button"
             onClick={() => setStatusFilter(column.key)}
             className={cn(
-              "shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold",
+              "shrink-0 rounded-lg border px-2.5 py-1.5 text-xs font-semibold",
               statusFilter === column.key
                 ? "border-primary bg-primary text-white"
                 : "border-border bg-surface text-muted-foreground hover:text-foreground",
