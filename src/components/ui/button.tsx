@@ -46,7 +46,7 @@ function isAppRoute(href: string) {
   );
 }
 
-export function Button({ className, variant, size, href, children, ...props }: ButtonProps) {
+export function Button({ className, variant, size, href, children, type, ...props }: ButtonProps) {
   const classes = cn(buttonVariants({ variant, size }), className);
   if (href) {
     if (isAppRoute(href)) {
@@ -63,7 +63,7 @@ export function Button({ className, variant, size, href, children, ...props }: B
     );
   }
   return (
-    <button type="button" className={classes} {...props}>
+    <button type={type ?? "button"} className={classes} {...props}>
       {children}
     </button>
   );

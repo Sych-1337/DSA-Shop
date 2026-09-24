@@ -219,6 +219,8 @@ export async function createCheckoutOrder(input: CheckoutInput) {
     to: input.email,
     orderNumber: order.orderNumber,
     totalAmount: order.totalAmount,
+  }).catch((error) => {
+    console.error("[checkout] order created email failed", error);
   });
 
   const { createOrderAccessToken } = await import("@/lib/security/order-access");
@@ -246,6 +248,8 @@ export async function createCheckoutOrder(input: CheckoutInput) {
       to: input.email,
       orderNumber: order.orderNumber,
       totalAmount: order.totalAmount,
+    }).catch((error) => {
+      console.error("[checkout] bank transfer email failed", error);
     });
 
     await clearCart(cart.id);

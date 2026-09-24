@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import {
   type ShippingPrefill,
 } from "@/components/store/checkout-shipping-fields";
 import { placeOrderAction } from "@/features/cart/actions";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { formatMoney } from "@/lib/money";
 
 export type CheckoutSavedAddress = {
@@ -49,10 +49,16 @@ export function CheckoutForm({
 }) {
   const t = useTranslations("checkout");
   const tAccount = useTranslations("account");
-  const router = useRouter();
+  const locale = useLocale();
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const idempotencyKey = useMemo(() => crypto.randomUUID(), []);
+  const idempotencyKey = useMemo(
+    () =>
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `idemp_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+    [],
+  );
 
   const defaultAddress = savedAddresses.find((row) => row.isDefault) ?? savedAddresses[0] ?? null;
   const [selectedAddressId, setSelectedAddressId] = useState<string>(defaultAddress?.id ?? "");
@@ -89,14 +95,25 @@ export function CheckoutForm({
   return (
     <form
       className="space-y-4"
-      action={(formData) => {
+      onSubmit={(event) => {
+        event.preventDefault();
+        setError(null);
+        const formData = new FormData(event.currentTarget);
         startTransition(async () => {
-          const result = await placeOrderAction(formData);
-          if (!result.ok) {
-            setError(result.error);
-            return;
+          try {
+            const result = await placeOrderAction(formData);
+            if (!result.ok) {
+              setError(result.error);
+              return;
+            }
+            // Hard navigation with locale — reliable with query token
+            const path = result.redirectUrl.startsWith("http")
+              ? result.redirectUrl
+              : `/${locale}${result.redirectUrl.startsWith("/") ? "" : "/"}${result.redirectUrl}`;
+            window.location.assign(path);
+          } catch {
+            setError(t("paySettleFailed"));
           }
-          router.push(result.redirectUrl);
         });
       }}
     >
@@ -236,7 +253,11 @@ export function CheckoutForm({
         </div>
       </div>
 
-      {error ? <p className="text-sm text-danger">{error}</p> : null}
+      {error ? (
+        <p className="rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">
+          {error}
+        </p>
+      ) : null}
 
       <Button type="submit" size="lg" disabled={pending} className="w-full">
         {pending ? t("placing") : t("placeOrder")}
