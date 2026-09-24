@@ -38,18 +38,16 @@ export async function sendBankTransferInstructionsEmail(input: {
 }) {
   const amount = formatMoney(input.totalAmount);
   const fop = getFopRequisites(input.orderNumber);
-  const details = fop
-    ? `<p><strong>${fop.name}</strong></p>
+  const details = `<p><strong>${fop.name}</strong></p>
        <p>IBAN: <code>${fop.iban}</code></p>
-       ${fop.edrpou ? `<p>ЄДРПОУ/ІПН: ${fop.edrpou}</p>` : ""}
-       ${fop.bankName ? `<p>Банк: ${fop.bankName}</p>` : ""}
-       <p>Призначення: <strong>${fop.purpose}</strong></p>`
-    : `<p>Реквізити ФОП будуть на сторінці оплати після налаштування магазину.</p>`;
+       <p>ЄДРПОУ/РНОКПП: ${fop.edrpou}</p>
+       <p>Банк: ${fop.bankName}</p>
+       <p>Призначення: <strong>${fop.purpose}</strong></p>`;
 
   await getEmailProvider().send({
     to: input.to,
     subject: `Реквізити для оплати · ${input.orderNumber}`,
-    text: `Оплатіть ${amount} замовлення ${input.orderNumber} переказом на ФОП. Призначення: Замовлення ${input.orderNumber}`,
+    text: `Оплатіть ${amount} замовлення ${input.orderNumber}. IBAN ${fop.iban}. Призначення: ${fop.purpose}`,
     html: shell(
       "Реквізити для оплати",
       `<p>Сума: <strong>${amount}</strong></p>${details}

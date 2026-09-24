@@ -270,15 +270,19 @@
     "paymentBankTransfer": "Bank transfer (FOP)",
     "paymentBankTransferHint": "Requisites after checkout. We confirm payment manually.",
     "paymentOnlineHint": "Card via WayForPay.",
-    "bankTransferTitle": "Pay by bank transfer",
-    "bankTransferLead": "Transfer the order total using the purpose below.",
+    "bankTransferTitle": "Payment details",
+    "bankTransferLead": "Transfer the exact order amount. Use the purpose text below.",
     "bankRecipient": "Recipient",
-    "bankEdrpou": "Tax ID",
+    "bankEdrpou": "Tax ID (EDRPOU / RNOKPP)",
     "bankName": "Bank",
     "bankPurpose": "Payment purpose",
     "bankRequisitesMissing": "FOP details are not configured yet.",
     "bankTransferWait": "We will confirm order {order} after the transfer arrives.",
-    "payOnlinePending": "Complete payment in the WayForPay window."
+    "payOnlinePending": "Complete payment in the WayForPay window.",
+    "bankIban": "Recipient IBAN",
+    "bankQrTitle": "Your top-up QR",
+    "bankQrLead": "Send funds quickly and conveniently!",
+    "bankQrAlt": "QR code for FOP bank transfer"
   },
   "blog": {
     "title": "Blog",
