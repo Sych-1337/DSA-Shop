@@ -25,7 +25,7 @@ import {
 } from "@/features/seo/service";
 import { storeDisplayName, storeTagline } from "@/lib/brand";
 import { prisma } from "@/lib/db/prisma";
-import { locales, type AppLocale } from "@/i18n/config";
+import { locales } from "@/i18n/config";
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -38,25 +38,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: "meta" });
   const setting = await prisma.storeSetting.findUnique({ where: { key: "store.name" } });
   const storeName = storeDisplayName(setting?.value as string | undefined);
-  const languages = Object.fromEntries(
-    locales.map((l) => [l, `/${l}`]),
-  ) as Record<AppLocale, string>;
 
   const meta = await buildEntityMetadata({
     entityType: "home",
     entityId: "home",
     fallbackTitle: t("siteTitle"),
     fallbackDescription: t("siteDescription"),
-    fallbackPath: `/${locale}`,
+    fallbackPath: "/",
+    locale,
   });
 
   return {
     ...meta,
-    title: meta.title ?? `${storeName}`,
-    alternates: {
-      ...meta.alternates,
-      languages,
-    },
+    title: meta.title ?? storeName,
   };
 }
 
@@ -111,7 +105,7 @@ export default async function Page({ params }: Props) {
     <>
       <JsonLd
         id="home-jsonld"
-        data={[organizationJsonLd(storeName), websiteJsonLd(storeName)]}
+        data={[organizationJsonLd(storeName, locale), websiteJsonLd(storeName, locale)]}
       />
       <HomePage
         storeName={storeName}

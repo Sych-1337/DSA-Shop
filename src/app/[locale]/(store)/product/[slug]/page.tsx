@@ -31,12 +31,12 @@ import {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ locale: string; slug: string }>;
 }): Promise<Metadata> {
   const t = await getTranslations("product");
-  const { slug } = await params;
+  const { locale, slug } = await params;
   const product = await getProductBySlug(slug);
-  if (!product) return { title: t("fallbackTitle") };
+  if (!product) return { title: t("fallbackTitle"), robots: { index: false, follow: false } };
   return buildEntityMetadata({
     entityType: "product",
     entityId: product.id,
@@ -44,12 +44,17 @@ export async function generateMetadata({
     fallbackDescription: product.shortDescription,
     fallbackPath: `/product/${product.slug}`,
     fallbackImage: product.images[0]?.url,
+    locale,
   });
 }
 
-export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ProductPage({
+  params,
+}: {
+  params: Promise<{ locale: string; slug: string }>;
+}) {
   const t = await getTranslations("product");
-  const { slug } = await params;
+  const { locale, slug } = await params;
   const product = await getProductBySlug(slug);
   if (!product) notFound();
 
@@ -103,19 +108,22 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       <JsonLd
         id={`product-jsonld-${product.slug}`}
         data={[
-          breadcrumbJsonLd([
-            { name: t("home"), path: "/" },
-            { name: t("catalog"), path: "/catalog" },
-            ...(product.primaryCategory
-              ? [
-                  {
-                    name: product.primaryCategory.name,
-                    path: `/catalog/${product.primaryCategory.slug}`,
-                  },
-                ]
-              : []),
-            { name: product.title, path: `/product/${product.slug}` },
-          ]),
+          breadcrumbJsonLd(
+            [
+              { name: t("home"), path: "/" },
+              { name: t("catalog"), path: "/catalog" },
+              ...(product.primaryCategory
+                ? [
+                    {
+                      name: product.primaryCategory.name,
+                      path: `/catalog/${product.primaryCategory.slug}`,
+                    },
+                  ]
+                : []),
+              { name: product.title, path: `/product/${product.slug}` },
+            ],
+            locale,
+          ),
           productJsonLd({
             name: product.title,
             description: product.shortDescription,
@@ -124,6 +132,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             priceAmount: price,
             availability: available > 0 ? "InStock" : "OutOfStock",
             brandName: product.brand?.name,
+            locale,
           }),
         ]}
       />

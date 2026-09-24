@@ -15,6 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
     fallbackTitle: t("account"),
     fallbackDescription: t("account"),
     fallbackPath: "/account",
+    forceNoindex: true,
   });
 }
 

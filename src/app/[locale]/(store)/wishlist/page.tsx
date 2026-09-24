@@ -19,6 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
     fallbackTitle: t("wishlist"),
     fallbackDescription: tWish("lead"),
     fallbackPath: "/wishlist",
+    forceNoindex: true,
   });
 }
 

@@ -1,4 +1,4 @@
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -21,12 +21,12 @@ const DATE_LOCALES: Record<string, string> = {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ locale: string; slug: string }>;
 }): Promise<Metadata> {
   const t = await getTranslations("blog");
-  const { slug } = await params;
+  const { locale, slug } = await params;
   const post = await getPublishedBlogPostBySlug(slug);
-  if (!post) return { title: t("article") };
+  if (!post) return { title: t("article"), robots: { index: false, follow: false } };
   return buildEntityMetadata({
     entityType: "blog",
     entityId: post.id,
@@ -34,13 +34,17 @@ export async function generateMetadata({
     fallbackDescription: post.seoDescription || post.excerpt,
     fallbackPath: `/blog/${post.slug}`,
     fallbackImage: post.coverImageUrl,
+    locale,
   });
 }
 
-export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function BlogPostPage({
+  params,
+}: {
+  params: Promise<{ locale: string; slug: string }>;
+}) {
   const t = await getTranslations("blog");
-  const locale = await getLocale();
-  const { slug } = await params;
+  const { locale, slug } = await params;
   const post = await getPublishedBlogPostBySlug(slug);
   if (!post) notFound();
 
@@ -58,11 +62,14 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       <JsonLd
         id={`blog-jsonld-${post.slug}`}
         data={[
-          breadcrumbJsonLd([
-            { name: t("home"), path: "/" },
-            { name: t("title"), path: "/blog" },
-            { name: post.title, path: `/blog/${post.slug}` },
-          ]),
+          breadcrumbJsonLd(
+            [
+              { name: t("home"), path: "/" },
+              { name: t("title"), path: "/blog" },
+              { name: post.title, path: `/blog/${post.slug}` },
+            ],
+            locale,
+          ),
           blogPostingJsonLd({
             title: post.title,
             description: post.excerpt,
@@ -70,6 +77,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             publishedAt: post.publishedAt,
             authorName: post.authorName,
             imageUrl: post.coverImageUrl,
+            locale,
           }),
         ]}
       />

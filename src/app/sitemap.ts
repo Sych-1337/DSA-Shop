@@ -20,8 +20,6 @@ const STATIC_PATHS = [
   "/privacy",
   "/terms",
   "/public-offer",
-  "/track-order",
-  "/wishlist",
 ];
 
 function staticEntries(): MetadataRoute.Sitemap {

@@ -16,6 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
     fallbackTitle: t("trackOrder"),
     fallbackDescription: tTrack("lead"),
     fallbackPath: "/track-order",
+    forceNoindex: true,
   });
 }
 

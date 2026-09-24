@@ -1,28 +1,62 @@
 import { getTranslations } from "next-intl/server";
+import type { Metadata } from "next";
 
+import { JsonLd } from "@/components/seo/json-ld";
 import {
   CatalogPagination,
   CatalogSortBar,
 } from "@/components/store/catalog-controls";
 import { CatalogLayout } from "@/components/store/catalog-layout";
 import { ProductCard } from "@/components/store/product-card";
-import { parseCatalogSearchParams } from "@/features/catalog/schema";
+import {
+  isThinCatalogQuery,
+  parseCatalogSearchParams,
+} from "@/features/catalog/schema";
 import {
   listActiveBrands,
   listActiveCategories,
   listActiveFandoms,
   listCatalogProducts,
 } from "@/features/catalog/service";
+import {
+  buildEntityMetadata,
+  collectionPageJsonLd,
+} from "@/features/seo/service";
 
-export default async function CatalogPage({
+export async function generateMetadata({
+  params,
   searchParams,
 }: {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+}): Promise<Metadata> {
+  const { locale } = await params;
   const t = await getTranslations("catalog");
   const tBrand = await getTranslations("brand");
-  const params = await searchParams;
-  const query = parseCatalogSearchParams(params);
+  const query = parseCatalogSearchParams(await searchParams);
+  return buildEntityMetadata({
+    entityType: "page",
+    entityId: "catalog",
+    fallbackTitle: t("title"),
+    fallbackDescription: tBrand("support"),
+    fallbackPath: "/catalog",
+    locale,
+    forceNoindex: isThinCatalogQuery(query),
+  });
+}
+
+export default async function CatalogPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const { locale } = await params;
+  const t = await getTranslations("catalog");
+  const tBrand = await getTranslations("brand");
+  const raw = await searchParams;
+  const query = parseCatalogSearchParams(raw);
   const [result, categories, fandoms, brands] = await Promise.all([
     listCatalogProducts(query),
     listActiveCategories(),
@@ -32,6 +66,17 @@ export default async function CatalogPage({
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8">
+      {!isThinCatalogQuery(query) ? (
+        <JsonLd
+          id="catalog-jsonld"
+          data={collectionPageJsonLd({
+            name: t("title"),
+            description: tBrand("support"),
+            path: "/catalog",
+            locale,
+          })}
+        />
+      ) : null}
       <div className="mb-6">
         <h1 className="text-display text-3xl font-semibold sm:text-4xl">{t("title")}</h1>
         <p className="mt-2 text-muted-foreground">{tBrand("support")}</p>

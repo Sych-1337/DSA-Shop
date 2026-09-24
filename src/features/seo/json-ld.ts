@@ -1,3 +1,7 @@
+import { defaultLocale } from "@/i18n/config";
+
+import { localizedSeoPath, resolveAppLocale } from "./locale-path";
+
 export function absoluteUrl(path: string) {
   const base = (process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
   const normalized = path.startsWith("/") ? path : `/${path}`;
@@ -10,30 +14,36 @@ export function jsonLdScript(data: Record<string, unknown> | Record<string, unkn
   };
 }
 
-export function organizationJsonLd(storeName: string) {
+export function organizationJsonLd(storeName: string, locale: string = defaultLocale) {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: storeName,
-    url: absoluteUrl("/"),
+    url: absoluteUrl(localizedSeoPath(locale, "/")),
   };
 }
 
-export function websiteJsonLd(storeName: string) {
+export function websiteJsonLd(storeName: string, locale: string = defaultLocale) {
+  const home = absoluteUrl(localizedSeoPath(locale, "/"));
+  const searchPath = absoluteUrl(localizedSeoPath(locale, "/search"));
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: storeName,
-    url: absoluteUrl("/"),
+    url: home,
+    inLanguage: resolveAppLocale(locale),
     potentialAction: {
       "@type": "SearchAction",
-      target: `${absoluteUrl("/search")}?q={search_term_string}`,
+      target: `${searchPath}?q={search_term_string}`,
       "query-input": "required name=search_term_string",
     },
   };
 }
 
-export function breadcrumbJsonLd(items: { name: string; path: string }[]) {
+export function breadcrumbJsonLd(
+  items: { name: string; path: string }[],
+  locale: string = defaultLocale,
+) {
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -41,7 +51,7 @@ export function breadcrumbJsonLd(items: { name: string; path: string }[]) {
       "@type": "ListItem",
       position: index + 1,
       name: item.name,
-      item: absoluteUrl(item.path),
+      item: absoluteUrl(localizedSeoPath(locale, item.path)),
     })),
   };
 }
@@ -55,7 +65,10 @@ export function productJsonLd(input: {
   currency?: string;
   availability: "InStock" | "OutOfStock" | "PreOrder";
   brandName?: string | null;
+  locale?: string;
 }) {
+  const locale = input.locale ?? defaultLocale;
+  const path = localizedSeoPath(locale, input.path);
   return {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -65,7 +78,7 @@ export function productJsonLd(input: {
     brand: input.brandName ? { "@type": "Brand", name: input.brandName } : undefined,
     offers: {
       "@type": "Offer",
-      url: absoluteUrl(input.path),
+      url: absoluteUrl(path),
       priceCurrency: input.currency ?? "UAH",
       price: (input.priceAmount / 100).toFixed(2),
       availability: `https://schema.org/${input.availability}`,
@@ -80,17 +93,39 @@ export function blogPostingJsonLd(input: {
   publishedAt?: Date | null;
   authorName?: string | null;
   imageUrl?: string | null;
+  locale?: string;
 }) {
+  const locale = input.locale ?? defaultLocale;
+  const path = localizedSeoPath(locale, input.path);
   return {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     headline: input.title,
     description: input.description ?? undefined,
-    url: absoluteUrl(input.path),
+    url: absoluteUrl(path),
+    inLanguage: locale,
     datePublished: input.publishedAt?.toISOString(),
     author: input.authorName
       ? { "@type": "Person", name: input.authorName }
       : undefined,
     image: input.imageUrl ?? undefined,
+  };
+}
+
+export function collectionPageJsonLd(input: {
+  name: string;
+  description?: string | null;
+  path: string;
+  locale?: string;
+}) {
+  const locale = input.locale ?? defaultLocale;
+  const path = localizedSeoPath(locale, input.path);
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: input.name,
+    description: input.description ?? undefined,
+    url: absoluteUrl(path),
+    inLanguage: locale,
   };
 }

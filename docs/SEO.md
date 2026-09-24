@@ -2,24 +2,36 @@
 
 ## Storefront
 
-- Next.js Metadata API
-- Canonical URLs
+- Next.js Metadata API via `buildEntityMetadata`
+- **Locale-prefixed canonicals** (`/uk/...`, `/en/...`, `/ru/...`)
+- **hreflang** for all three locales + `x-default` → `uk`
 - Dynamic sitemap + robots
-- Breadcrumbs UI + BreadcrumbList JSON-LD
+- Breadcrumbs UI + BreadcrumbList JSON-LD (locale-aware URLs)
 - Product + Offer (+ AggregateRating only when real)
-- Organization + WebSite SearchAction
-- Open Graph / Twitter cards
-- Optimized images, clean pagination
-- Redirects on slug change
-- `noindex`: cart, checkout, account, empty/meaningless filter combos
+- CollectionPage JSON-LD on catalog / category / collection / fandom
+- Organization + WebSite SearchAction (locale search URL)
+- Open Graph / Twitter cards with correct `og:locale`
+- Redirects on slug change (DB `Redirect`, applied in `proxy.ts`)
+- `noindex`: cart, checkout, account, wishlist, track-order, search, thin filter/pagination combos
 - Never fake ratings in structured data
+
+## Locales
+
+Primary locale `uk` (x-default). Live alternate URLs for `en` and `ru` (`localePrefix: "always"`).
+
+Admin `SeoMeta.canonicalPath` may be bare (`/product/slug`) or localized — both are normalized before output.
 
 ## Admin SEO tools
 
-Per entity: slug, title, meta description, H1, canonical, index/noindex, OG image, alt guidance.
+Per entity: slug, title, meta description, H1, canonical, index/noindex, OG image.
 
-Global: redirects, 404 report, sitemap controls, missing metadata, duplicate slugs, broken links, images without alt, completeness indicator.
+Global (current): redirects list/create/toggle.
 
-## Content language
+Still planned: 404 report, missing metadata, duplicate slugs, broken links, images without alt, completeness indicator.
 
-Primary locale `uk`. English alternate names indexed for search. Multi-language URLs deferred.
+## Checklist before indexing
+
+1. `APP_URL` = production HTTPS domain
+2. Submit `https://{domain}/sitemap.xml` in Search Console
+3. Spot-check canonical + hreflang on home, PDP, category
+4. Confirm soft-launch pages (cart/checkout/account) stay noindex

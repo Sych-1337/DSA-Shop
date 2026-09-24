@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import type { Metadata } from "next";
 
 import {
   CatalogPagination,
@@ -16,7 +17,30 @@ import {
   listPopularSearchQueries,
   logSearchQuery,
 } from "@/features/catalog/service";
+import { buildEntityMetadata } from "@/features/seo/service";
 import { Link } from "@/i18n/navigation";
+
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations("catalog");
+  const query = parseCatalogSearchParams(await searchParams);
+  const title = query.q ? t("searchFor", { query: query.q }) : t("search");
+  return buildEntityMetadata({
+    entityType: "page",
+    entityId: "search",
+    fallbackTitle: title,
+    fallbackDescription: t("searchHint"),
+    fallbackPath: "/search",
+    locale,
+    forceNoindex: true,
+  });
+}
 
 export default async function SearchPage({
   searchParams,

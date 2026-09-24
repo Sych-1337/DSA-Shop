@@ -33,6 +33,23 @@ export const catalogQuerySchema = z.object({
 
 export type CatalogQuery = z.infer<typeof catalogQuerySchema>;
 
+/** Faceted / paginated catalog URLs are thin duplicates — keep out of the index. */
+export function isThinCatalogQuery(
+  query: CatalogQuery,
+  options?: { ignoreCategory?: boolean; ignoreFandom?: boolean },
+) {
+  if (query.page > 1) return true;
+  if (query.q?.trim()) return true;
+  if (query.brand) return true;
+  if (query.minPrice != null || query.maxPrice != null) return true;
+  if (query.inStock) return true;
+  if (query.onSale) return true;
+  if (query.sort !== "popular") return true;
+  if (query.category && !options?.ignoreCategory) return true;
+  if (query.fandom && !options?.ignoreFandom) return true;
+  return false;
+}
+
 export function parseCatalogSearchParams(
   params: Record<string, string | string[] | undefined>,
 ): CatalogQuery {

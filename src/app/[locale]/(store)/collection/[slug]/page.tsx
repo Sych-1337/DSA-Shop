@@ -1,11 +1,40 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 
+import { JsonLd } from "@/components/seo/json-ld";
 import { ProductCard } from "@/components/store/product-card";
 import { getCollectionBySlug } from "@/features/catalog/service";
 import { ProductStatus } from "@/generated/prisma";
+import {
+  buildEntityMetadata,
+  collectionPageJsonLd,
+} from "@/features/seo/service";
 
-export default async function CollectionPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; slug: string }>;
+}): Promise<Metadata> {
+  const { locale, slug } = await params;
+  const collection = await getCollectionBySlug(slug);
+  if (!collection) return { title: "404", robots: { index: false, follow: false } };
+  return buildEntityMetadata({
+    entityType: "collection",
+    entityId: collection.id,
+    fallbackTitle: collection.name,
+    fallbackDescription: collection.description,
+    fallbackPath: `/collection/${collection.slug}`,
+    fallbackImage: collection.imageUrl,
+    locale,
+  });
+}
+
+export default async function CollectionPage({
+  params,
+}: {
+  params: Promise<{ locale: string; slug: string }>;
+}) {
+  const { locale, slug } = await params;
   const collection = await getCollectionBySlug(slug);
   if (!collection) notFound();
 
@@ -15,6 +44,15 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8">
+      <JsonLd
+        id={`collection-jsonld-${collection.slug}`}
+        data={collectionPageJsonLd({
+          name: collection.name,
+          description: collection.description,
+          path: `/collection/${collection.slug}`,
+          locale,
+        })}
+      />
       <h1 className="text-display text-4xl font-semibold">{collection.name}</h1>
       {collection.description ? (
         <p className="mt-2 text-muted-foreground">{collection.description}</p>
